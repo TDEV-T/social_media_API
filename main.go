@@ -91,6 +91,9 @@ func main() {
 	app.Get("/posts", func(c *fiber.Ctx) error {
 		return models.GetPosts(db, c)
 	})
+	app.Get("/posts/feed", func(c *fiber.Ctx) error {
+		return models.GetFeeds(db, c)
+	})
 
 	app.Use("/comment", middleware.AuthRequired)
 	app.Post("/comment", func(c *fiber.Ctx) error {

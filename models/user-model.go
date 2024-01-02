@@ -210,3 +210,22 @@ func LoginUser(db *gorm.DB, c *fiber.Ctx) error {
 	})
 
 }
+
+func GetFriendIDs(db *gorm.DB, userId uint) ([]uint, error) {
+	var friendIDs []uint
+
+	var followers []Follower
+
+	result := db.Where("following_user_id = ? ", userId).Find(&followers)
+
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	for _, follower := range followers {
+		friendIDs = append(friendIDs, follower.FollowerUserID)
+	}
+
+	return friendIDs, nil
+
+}

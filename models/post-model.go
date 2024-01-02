@@ -80,3 +80,68 @@ func GetPosts(db *gorm.DB, c *fiber.Ctx) error {
 	return c.JSON(PostsWithComment)
 
 }
+
+func GetPostsPublic(db *gorm.DB) ([]Post, error) {
+	var publicPost []Post
+
+	result := db.Where("IsPublic = ?", true).Preload("Comments").Find(&publicPost)
+
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	return publicPost, nil
+}
+
+func GetPostsFollower(db *gorm.DB, userId uint) ([]Post, error) {
+	var friendPosts []Post
+
+	friendIDs, err := GetFriendIDs(db, userId)
+
+	if err != nil {
+		return nil, err
+	}
+
+	result := db.Where("UserID IN ?", friendIDs).Preload("Comments").Find(&friendPosts)
+
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	return friendPosts, nil
+
+}
+
+func GetFeeds(db *gorm.DB, c *fiber.Ctx) error {
+
+	userLocal := c.Locals("user").(*User)
+
+	publicPosts, err := GetPostsPublic(db)
+
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
+	}
+
+	friendPosts, err := GetPostsFollower(db, userLocal.ID)
+
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
+	}
+
+	allFeed := append(publicPosts, friendPosts...)
+
+	SortPostByCreatedAt(allFeed)
+
+	return c.JSON(allFeed)
+
+}
+
+func SortPostByCreatedAt(posts []Post) {
+	for i := 0; i < len(posts)-1; i++ {
+		for j := 0; i < len(posts)-1-i; j++ {
+			if posts[j].CreatedAt.Before(posts[j+1].CreatedAt) {
+				posts[j], posts[j+1] = posts[j+1], posts[j]
+			}
+		}
+	}
+}
