@@ -24,6 +24,8 @@ const (
 	dbname   = "social_media"
 )
 
+var db *gorm.DB
+
 func main() {
 
 	err := godotenv.Load()
@@ -38,18 +40,7 @@ func main() {
 		portOpen = "8080"
 	}
 
-	dsn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", host, port, user, password, dbname)
-
-	newLogger := logger.New(
-		log.New(os.Stdout, "\r\n", log.LstdFlags),
-		logger.Config{
-			SlowThreshold: time.Second,
-			LogLevel:      logger.Info,
-			Colorful:      true,
-		},
-	)
-
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{Logger: newLogger})
+	db = SetupDatabase()
 
 	if err != nil {
 		panic("failed to connect database")
@@ -94,6 +85,9 @@ func main() {
 	app.Get("/posts/feed", func(c *fiber.Ctx) error {
 		return models.GetFeeds(db, c)
 	})
+	app.Delete("/posts/:id", func(c *fiber.Ctx) error {
+		return models.DeletePosts(db, c)
+	})
 
 	app.Use("/comment", middleware.AuthRequired)
 	app.Post("/comment", func(c *fiber.Ctx) error {
@@ -101,4 +95,25 @@ func main() {
 	})
 
 	app.Listen(":" + portOpen)
+}
+
+func SetupDatabase() *gorm.DB {
+	dsn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", host, port, user, password, dbname)
+
+	newLogger := logger.New(
+		log.New(os.Stdout, "\r\n", log.LstdFlags),
+		logger.Config{
+			SlowThreshold: time.Second,
+			LogLevel:      logger.Info,
+			Colorful:      true,
+		},
+	)
+
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{Logger: newLogger})
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return db
 }

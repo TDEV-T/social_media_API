@@ -2,7 +2,7 @@ package models
 
 import (
 	"encoding/json"
-	"fmt"
+	"strconv"
 
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
@@ -48,8 +48,6 @@ func CreatePost(db *gorm.DB, c *fiber.Ctx) error {
 	if len(imageLocal) != 0 {
 		post.Image = string(imageJson)
 	}
-
-	fmt.Println(post)
 
 	if post.Content == "" && post.Image == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -156,4 +154,29 @@ func SortPostByCreatedAt(posts []Post) {
 			}
 		}
 	}
+}
+
+func DeletePosts(db *gorm.DB, c *fiber.Ctx) error {
+	userLocal := c.Locals("user").(*User)
+
+	if userLocal.Role != "admin" {
+		return c.SendStatus(fiber.StatusUnauthorized)
+	}
+
+	id, err := strconv.Atoi(c.Params("id"))
+
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).SendString(err.Error())
+	}
+
+	var post Post
+
+	result := db.Delete(&post, id)
+
+	if result.Error != nil {
+		return c.Status(fiber.StatusBadRequest).SendString(result.Error.Error())
+	}
+
+	return c.Status(fiber.StatusAccepted).SendString("Delete Success !")
+
 }

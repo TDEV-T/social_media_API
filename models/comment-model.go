@@ -50,3 +50,7 @@ func CommentCreate(db *gorm.DB, c *fiber.Ctx) error {
 	})
 
 }
+
+// func CommentEdit(db *gorm.DB,c *fiber.Ctx) error {
+
+// }
