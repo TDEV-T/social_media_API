@@ -97,6 +97,10 @@ func main() {
 		return models.CommentEdit(db, c)
 	})
 
+	app.Use("/follow", middleware.AuthRequired)
+	app.Post("/follow/req", func(c *fiber.Ctx) error {
+		return models.RequestFollower(db, c)
+	})
 	app.Listen(":" + portOpen)
 }
 
