@@ -2,6 +2,7 @@ package models
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
@@ -51,6 +52,32 @@ func CommentCreate(db *gorm.DB, c *fiber.Ctx) error {
 
 }
 
-// func CommentEdit(db *gorm.DB,c *fiber.Ctx) error {
+func CommentEdit(db *gorm.DB, c *fiber.Ctx) error {
+	userLocal := c.Locals("user").(*User)
 
-// }
+	if userLocal == nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Error Can't get UID"})
+	}
+
+	id, err := strconv.Atoi(c.Params("id"))
+
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Error Can't Get id comment"})
+	}
+
+	cm := Comment{Content: ""}
+
+	if err := c.BodyParser(&cm); err != nil {
+		return err
+	}
+
+	result := db.Model(&Comment{}).Where("id = ?", id).UpdateColumns(&cm)
+
+	if result.Error != nil {
+		return result.Error
+	}
+
+	return c.JSON(fiber.Map{
+		"message": "Update Success",
+	})
+}

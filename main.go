@@ -93,6 +93,9 @@ func main() {
 	app.Post("/comment", func(c *fiber.Ctx) error {
 		return models.CommentCreate(db, c)
 	})
+	app.Patch("/comment/:id", func(c *fiber.Ctx) error {
+		return models.CommentEdit(db, c)
+	})
 
 	app.Listen(":" + portOpen)
 }
