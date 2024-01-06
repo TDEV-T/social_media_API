@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"tdev/functional"
 	"tdev/middleware"
 	"tdev/models"
 
@@ -117,6 +118,14 @@ func main() {
 	})
 	app.Post("/like/unlike/:id", func(c *fiber.Ctx) error {
 		return models.DeleteLike(db, c)
+	})
+
+	app.Post("/uploadfile", middleware.UploadFile, func(c *fiber.Ctx) error {
+		return functional.UploadFile(c)
+	})
+
+	app.Delete("/uploadfile/:name", func(c *fiber.Ctx) error {
+		return functional.DeleteFile(c)
 	})
 
 	app.Listen(":" + portOpen)

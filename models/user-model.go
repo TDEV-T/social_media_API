@@ -15,21 +15,22 @@ import (
 
 type User struct {
 	gorm.Model
-	Username       string        `gorm:"unique;not null" json:"username"`
-	Password       string        `gorm:"not null" json:"password"`
-	FullName       string        `json:"fullname"`
-	Email          string        `gorm:"unique" json:"email"`
-	ProfilePicture string        `json:"profilepicture"`
-	Bio            string        `json:"bio"`
-	PrivateAccount bool          `gorm:"default:false"`
-	Role           string        `gorm:"default:'user'"`
-	Posts          []Post        `gorm:"foreignKey:UserID"`
-	Likes          []Like        `gorm:"foreignKey:UserID"`
-	Comments       []Comment     `gorm:"foreignKey:UserID"`
-	Followers      []Follower    `gorm:"foreignKey:FollowingUserID"`
-	BlockedUsers   []BlockedUser `gorm:"foreignKey:BlockingUserID"`
-	SentChats      []Chat        `gorm:"foreignKey:SenderUserID"`
-	ReceivedChats  []Chat        `gorm:"foreignKey:ReceiverUserID"`
+	Username         string        `gorm:"unique;not null" json:"username"`
+	Password         string        `gorm:"not null" json:"password"`
+	FullName         string        `json:"fullname"`
+	Email            string        `gorm:"unique" json:"email"`
+	ProfilePicture   string        `gorm:"default:picdefault.png" json:"profilepicture"`
+	CoverfilePicture string        `gorm:"default:coverdefault.png" json:"coverfilepicture"`
+	Bio              string        `json:"bio"`
+	PrivateAccount   bool          `gorm:"default:false"`
+	Role             string        `gorm:"default:'user'"`
+	Posts            []Post        `gorm:"foreignKey:UserID"`
+	Likes            []Like        `gorm:"foreignKey:UserID"`
+	Comments         []Comment     `gorm:"foreignKey:UserID"`
+	Followers        []Follower    `gorm:"foreignKey:FollowingUserID"`
+	BlockedUsers     []BlockedUser `gorm:"foreignKey:BlockingUserID"`
+	SentChats        []Chat        `gorm:"foreignKey:SenderUserID"`
+	ReceivedChats    []Chat        `gorm:"foreignKey:ReceiverUserID"`
 }
 
 func (u *User) TableName() string {
