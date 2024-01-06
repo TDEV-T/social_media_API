@@ -81,3 +81,39 @@ func CommentEdit(db *gorm.DB, c *fiber.Ctx) error {
 		"message": "Update Success",
 	})
 }
+
+func DeleteComment(db *gorm.DB, c *fiber.Ctx) error {
+	userLocal := c.Locals("user").(*User)
+
+	if userLocal == nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Error Can't Get Id"})
+	}
+
+	id, err := strconv.Atoi(c.Params("id"))
+
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": err.Error(),
+		})
+	}
+
+	comment := new(Comment)
+
+	result := db.First(comment, id)
+
+	if result.Error != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": result.Error.Error()})
+	}
+
+	if comment.UserID != userLocal.ID {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "U not owner this comment !"})
+	}
+
+	result = db.Unscoped().Delete(&Comment{}, id)
+
+	if result.Error != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": result.Error.Error()})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Delete Comment Success"})
+}

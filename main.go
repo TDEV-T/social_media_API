@@ -96,6 +96,9 @@ func main() {
 	app.Patch("/comment/:id", func(c *fiber.Ctx) error {
 		return models.CommentEdit(db, c)
 	})
+	app.Delete("/comment/:id", func(c *fiber.Ctx) error {
+		return models.DeleteComment(db, c)
+	})
 
 	app.Use("/follow", middleware.AuthRequired)
 	app.Post("/follow/req", func(c *fiber.Ctx) error {
