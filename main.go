@@ -101,6 +101,21 @@ func main() {
 	app.Post("/follow/req", func(c *fiber.Ctx) error {
 		return models.RequestFollower(db, c)
 	})
+	app.Post("/follow/accept/:id", func(c *fiber.Ctx) error {
+		return models.AcceptFollower(db, c)
+	})
+	app.Delete("/follow/unfollow/:id", func(c *fiber.Ctx) error {
+		return models.UnFollower(db, c)
+	})
+
+	app.Use("/like", middleware.AuthRequired)
+	app.Post("/like", func(c *fiber.Ctx) error {
+		return models.LikePost(db, c)
+	})
+	app.Post("/like/unlike/:id", func(c *fiber.Ctx) error {
+		return models.DeleteLike(db, c)
+	})
+
 	app.Listen(":" + portOpen)
 }
 

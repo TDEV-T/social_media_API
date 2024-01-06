@@ -69,7 +69,7 @@ func CreatePost(db *gorm.DB, c *fiber.Ctx) error {
 func GetPosts(db *gorm.DB, c *fiber.Ctx) error {
 	var PostsWithComment []Post
 
-	result := db.Preload("Comments").Find(&PostsWithComment)
+	result := db.Preload("Comments").Preload("Likes").Find(&PostsWithComment)
 
 	if result.Error != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString(result.Error.Error())
@@ -82,7 +82,7 @@ func GetPosts(db *gorm.DB, c *fiber.Ctx) error {
 func GetPostsPublic(db *gorm.DB) ([]Post, error) {
 	var publicPost []Post
 
-	result := db.Where("is_public = ?", true).Preload("Comments").Find(&publicPost)
+	result := db.Where("is_public = ?", true).Preload("Comments").Preload("Likes").Find(&publicPost)
 
 	if result.Error != nil {
 		return nil, result.Error
@@ -105,7 +105,7 @@ func GetPostsFollower(db *gorm.DB, userId uint) ([]Post, error) {
 		return nil, nil
 	}
 
-	result := db.Where("user_id IN ?", friendIDs).Preload("Comments").Find(&friendPosts)
+	result := db.Where("user_id IN ?", friendIDs).Preload("Comments").Preload("Likes").Find(&friendPosts)
 
 	if result.Error != nil {
 		return nil, result.Error
