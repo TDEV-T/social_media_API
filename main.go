@@ -128,6 +128,8 @@ func main() {
 		return functional.DeleteFile(c)
 	})
 
+	app.Get("/images/:imageName", functional.GetImageHandler)
+
 	app.Listen(":" + portOpen)
 }
 

@@ -3,6 +3,7 @@ package functional
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -48,4 +49,18 @@ func UploadFile(c *fiber.Ctx) error {
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Upload Successfully !", "data": imageLocal, "json": imageJson})
+}
+
+func GetImageHandler(c *fiber.Ctx) error {
+	imageName := c.Params("imageName")
+
+	imagePath := filepath.Join("uploads", imageName)
+
+	imageData, err := ioutil.ReadFile(imagePath)
+
+	if err != nil {
+		return c.SendStatus(fiber.StatusNotFound)
+	}
+
+	return c.Send(imageData)
 }
