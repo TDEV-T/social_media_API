@@ -56,8 +56,23 @@ func CreateUser(db *gorm.DB, c *fiber.Ctx) error {
 	result := db.Create(&user)
 
 	if result.Error != nil {
-		// log.Fatal("Error Register User : %v", result.Error)
-		return result.Error
+
+		// return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+		// 	"message": result.Error.Error(),
+		// })
+
+		if result.Error.Error() == `ERROR: duplicate key value violates unique constraint "users_username_key" (SQLSTATE 23505)` {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"message": "Username already to use !",
+			})
+		} else if result.Error.Error() == `ERROR: duplicate key value violates unique constraint "users_email_key" (SQLSTATE 23505)` {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"message": "Email already to use !",
+			})
+		} else {
+			return c.Status(fiber.StatusBadRequest).SendString(result.Error.Error())
+		}
+
 	}
 
 	return c.JSON(fiber.Map{
