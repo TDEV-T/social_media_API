@@ -218,11 +218,13 @@ func LoginUser(db *gorm.DB, c *fiber.Ctx) error {
 	})
 
 	return c.JSON(fiber.Map{
-		"token":    t,
-		"userid":   selectedUser.ID,
-		"username": selectedUser.Username,
-		"userrole": selectedUser.Role,
-		"message":  "Login Successfully",
+		"token":     t,
+		"userid":    selectedUser.ID,
+		"username":  selectedUser.Username,
+		"userrole":  selectedUser.Role,
+		"message":   "Login Successfully",
+		"status":    true,
+		"useremail": selectedUser.Email,
 	})
 
 }

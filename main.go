@@ -57,6 +57,22 @@ func main() {
 		return models.CreateUser(db, c)
 	})
 
+	app.Post("/checkCurUser", middleware.AuthRequiredHeader, func(c *fiber.Ctx) error {
+		userLocal := c.Locals("user").(*models.User)
+
+		if userLocal == nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Can't Get Data"})
+		}
+
+		return c.JSON(fiber.Map{
+			"status":       true,
+			"userId":       userLocal.ID,
+			"userRole":     userLocal.ID,
+			"userUsername": userLocal.Username,
+		})
+
+	})
+
 	app.Use("/users", middleware.AuthRequired)
 
 	app.Get("/users", func(c *fiber.Ctx) error {
