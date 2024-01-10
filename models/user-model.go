@@ -182,17 +182,30 @@ func LoginUser(db *gorm.DB, c *fiber.Ctx) error {
 	result := db.Where("username = ?", user.Username).First(selectedUser)
 
 	if result.Error != nil {
-		return c.SendStatus(fiber.StatusUnauthorized)
+
+		var messageError string
+
+		if result.Error.Error() == "record not found" {
+			messageError = "Username or Password Incorrect !"
+		} else {
+			messageError = result.Error.Error()
+		}
+
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"message": messageError,
+		})
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(selectedUser.Password), []byte(user.Password)); err != nil {
-		return c.SendStatus(fiber.StatusUnauthorized)
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"message": err.Error(),
+		})
 	}
 
 	jwtSecretKey := os.Getenv("SECRET_KEY")
 
 	if jwtSecretKey == "" {
-		return c.JSON(fiber.Map{
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"message": "Can't get secret_key",
 		})
 	}
