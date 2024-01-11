@@ -197,8 +197,14 @@ func LoginUser(db *gorm.DB, c *fiber.Ctx) error {
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(selectedUser.Password), []byte(user.Password)); err != nil {
+		var messageError string
+
+		if err.Error() == "crypto/bcrypt: hashedPassword is not the hash of the given password" {
+			messageError = "Username or Password Incorrect !"
+		}
+
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"message": err.Error(),
+			"message": messageError,
 		})
 	}
 
