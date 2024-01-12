@@ -13,6 +13,7 @@ type Comment struct {
 	UserID  uint
 	PostID  uint   `json:"pid"`
 	Content string `json:"content"`
+	User    User   `gorm:"foreignkey:UserID"`
 }
 
 func (c *Comment) TableName() string {

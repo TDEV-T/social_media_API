@@ -16,6 +16,7 @@ type Post struct {
 	IsPublic bool      `gorm:"default:true" json:"public"`
 	Likes    []Like    `gorm:"foreignKey:PostID"`
 	Comments []Comment `gorm:"foreignKey:PostID"`
+	User     User      `gorm:"foreignkey:UserID"`
 }
 
 func (p *Post) TableName() string {
@@ -69,7 +70,9 @@ func CreatePost(db *gorm.DB, c *fiber.Ctx) error {
 func GetPosts(db *gorm.DB, c *fiber.Ctx) error {
 	var PostsWithComment []Post
 
-	result := db.Preload("Comments").Preload("Likes").Find(&PostsWithComment)
+	// result := db.Preload("User", func(db *gorm.DB) *gorm.DB { return db.Select("id", "username", "full_name", "profile_picture") }).Preload("Comments").Preload("Comments.User").Preload("Likes").Find(&PostsWithComment)
+
+	result := db.Preload("User", func(db *gorm.DB) *gorm.DB { return db.Select("id", "username", "full_name", "profile_picture") }).Find(&PostsWithComment)
 
 	if result.Error != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString(result.Error.Error())
@@ -82,7 +85,7 @@ func GetPosts(db *gorm.DB, c *fiber.Ctx) error {
 func GetPostsPublic(db *gorm.DB) ([]Post, error) {
 	var publicPost []Post
 
-	result := db.Where("is_public = ?", true).Preload("Comments").Preload("Likes").Find(&publicPost)
+	result := db.Where("is_public = ?", true).Preload("Comments").Preload("Comments.User").Preload("Likes").Find(&publicPost)
 
 	if result.Error != nil {
 		return nil, result.Error
