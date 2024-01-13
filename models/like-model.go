@@ -11,6 +11,7 @@ type Like struct {
 	gorm.Model
 	UserID uint
 	PostID uint `json:"pid"`
+	User   User `gorm:"foreignkey:UserID"`
 }
 
 func (l *Like) TableName() string {

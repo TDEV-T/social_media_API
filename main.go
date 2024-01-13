@@ -91,7 +91,7 @@ func main() {
 		return models.DeleteUser(db, c)
 	})
 
-	app.Use("/posts", middleware.AuthRequired)
+	app.Use("/posts", middleware.AuthRequiredHeader)
 
 	app.Post("/posts", middleware.UploadFile, func(c *fiber.Ctx) error {
 		return models.CreatePost(db, c)
@@ -106,7 +106,7 @@ func main() {
 		return models.DeletePosts(db, c)
 	})
 
-	app.Use("/comment", middleware.AuthRequired)
+	app.Use("/comment", middleware.AuthRequiredHeader)
 	app.Post("/comment", func(c *fiber.Ctx) error {
 		return models.CommentCreate(db, c)
 	})
@@ -117,7 +117,7 @@ func main() {
 		return models.DeleteComment(db, c)
 	})
 
-	app.Use("/follow", middleware.AuthRequired)
+	app.Use("/follow", middleware.AuthRequiredHeader)
 	app.Post("/follow/req", func(c *fiber.Ctx) error {
 		return models.RequestFollower(db, c)
 	})
@@ -128,7 +128,7 @@ func main() {
 		return models.UnFollower(db, c)
 	})
 
-	app.Use("/like", middleware.AuthRequired)
+	app.Use("/like", middleware.AuthRequiredHeader)
 	app.Post("/like", func(c *fiber.Ctx) error {
 		return models.LikePost(db, c)
 	})

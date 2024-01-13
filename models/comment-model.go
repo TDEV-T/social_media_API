@@ -1,7 +1,6 @@
 package models
 
 import (
-	"fmt"
 	"strconv"
 
 	"github.com/gofiber/fiber/v2"
@@ -12,7 +11,7 @@ type Comment struct {
 	gorm.Model
 	UserID  uint
 	PostID  uint   `json:"pid"`
-	Content string `json:"content"`
+	Content string `gorm:"not null" json:"content"`
 	User    User   `gorm:"foreignkey:UserID"`
 }
 
@@ -38,8 +37,6 @@ func CommentCreate(db *gorm.DB, c *fiber.Ctx) error {
 	}
 
 	comment.UserID = userLocal.ID
-
-	fmt.Println(comment)
 
 	result := db.Save(comment)
 

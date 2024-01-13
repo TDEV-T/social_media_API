@@ -70,9 +70,7 @@ func CreatePost(db *gorm.DB, c *fiber.Ctx) error {
 func GetPosts(db *gorm.DB, c *fiber.Ctx) error {
 	var PostsWithComment []Post
 
-	// result := db.Preload("User", func(db *gorm.DB) *gorm.DB { return db.Select("id", "username", "full_name", "profile_picture") }).Preload("Comments").Preload("Comments.User").Preload("Likes").Find(&PostsWithComment)
-
-	result := db.Preload("User", func(db *gorm.DB) *gorm.DB { return db.Select("id", "username", "full_name", "profile_picture") }).Find(&PostsWithComment)
+	result := db.Preload("User", func(db *gorm.DB) *gorm.DB { return db.Select("id", "username", "full_name", "profile_picture") }).Preload("Comments").Preload("Comments.User", func(db *gorm.DB) *gorm.DB { return db.Select("id", "username", "full_name", "profile_picture") }).Preload("Likes").Preload("Likes.User", func(db *gorm.DB) *gorm.DB { return db.Select("id") }).Find(&PostsWithComment)
 
 	if result.Error != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString(result.Error.Error())
@@ -85,7 +83,7 @@ func GetPosts(db *gorm.DB, c *fiber.Ctx) error {
 func GetPostsPublic(db *gorm.DB) ([]Post, error) {
 	var publicPost []Post
 
-	result := db.Where("is_public = ?", true).Preload("Comments").Preload("Comments.User").Preload("Likes").Find(&publicPost)
+	result := db.Preload("User", func(db *gorm.DB) *gorm.DB { return db.Select("id", "username", "full_name", "profile_picture") }).Preload("Comments").Preload("Comments.User", func(db *gorm.DB) *gorm.DB { return db.Select("id", "username", "full_name", "profile_picture") }).Preload("Likes").Preload("Likes.User", func(db *gorm.DB) *gorm.DB { return db.Select("id") }).Find(&publicPost)
 
 	if result.Error != nil {
 		return nil, result.Error
@@ -108,8 +106,7 @@ func GetPostsFollower(db *gorm.DB, userId uint) ([]Post, error) {
 		return nil, nil
 	}
 
-	result := db.Where("user_id IN ?", friendIDs).Preload("Comments").Preload("Likes").Find(&friendPosts)
-
+	result := db.Where("user_id IN ?", friendIDs).Preload("User", func(db *gorm.DB) *gorm.DB { return db.Select("id", "username", "full_name", "profile_picture") }).Preload("Comments").Preload("Comments.User", func(db *gorm.DB) *gorm.DB { return db.Select("id", "username", "full_name", "profile_picture") }).Preload("Likes").Preload("Likes.User", func(db *gorm.DB) *gorm.DB { return db.Select("id") }).Find(&friendPosts)
 	if result.Error != nil {
 		return nil, result.Error
 	}
