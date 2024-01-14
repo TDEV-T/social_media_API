@@ -46,9 +46,7 @@ func CreatePost(db *gorm.DB, c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).SendString(err.Error())
 	}
 
-	if len(imageLocal) != 0 {
-		post.Image = string(imageJson)
-	}
+	post.Image = string(imageJson)
 
 	if post.Content == "" && post.Image == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{

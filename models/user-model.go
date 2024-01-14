@@ -19,7 +19,7 @@ type User struct {
 	Password         string        `gorm:"not null" json:"password"`
 	FullName         string        `json:"fullname"`
 	Email            string        `gorm:"unique" json:"email"`
-	ProfilePicture   string        `gorm:"default:picdefault.png" json:"profilepicture"`
+	ProfilePicture   string        `gorm:"default:default.png" json:"profilepicture"`
 	CoverfilePicture string        `gorm:"default:coverdefault.png" json:"coverfilepicture"`
 	Bio              string        `json:"bio"`
 	PrivateAccount   bool          `gorm:"default:false"`
