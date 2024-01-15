@@ -10,13 +10,14 @@ import (
 
 type Post struct {
 	gorm.Model
-	UserID   uint
-	Content  string    `json:"content"`
-	Image    string    `gorm:"type:json"`
-	IsPublic bool      `gorm:"default:true" json:"public"`
-	Likes    []Like    `gorm:"foreignKey:PostID"`
-	Comments []Comment `gorm:"foreignKey:PostID"`
-	User     User      `gorm:"foreignkey:UserID"`
+	UserID      uint
+	Content     string    `json:"content"`
+	ContentType string    `gorm:"default:'picture'" json:"contenttype"`
+	Image       string    `gorm:"type:json"`
+	IsPublic    bool      `gorm:"default:true" json:"public"`
+	Likes       []Like    `gorm:"foreignKey:PostID"`
+	Comments    []Comment `gorm:"foreignKey:PostID"`
+	User        User      `gorm:"foreignkey:UserID"`
 }
 
 func (p *Post) TableName() string {
