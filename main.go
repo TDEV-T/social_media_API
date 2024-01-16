@@ -48,7 +48,11 @@ func main() {
 	}
 	db.AutoMigrate(&models.User{}, &models.Post{}, &models.Like{}, &models.Comment{}, &models.Follower{}, &models.BlockedUser{}, &models.Chat{})
 
-	app := fiber.New()
+	app := fiber.New(fiber.Config{
+		BodyLimit:         20 * 1024 * 1024,
+		StreamRequestBody: true,
+	})
+
 	app.Post("/login", func(c *fiber.Ctx) error {
 		return models.LoginUser(db, c)
 	})
@@ -145,6 +149,7 @@ func main() {
 	})
 
 	app.Get("/images/:imageName", functional.GetImageHandler)
+	app.Get("/video/:video", functional.StreamVideo)
 
 	app.Listen(":" + portOpen)
 }
