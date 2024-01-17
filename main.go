@@ -47,7 +47,7 @@ func main() {
 	if err != nil {
 		panic("failed to connect database")
 	}
-	db.AutoMigrate(&models.User{}, &models.Post{}, &models.Like{}, &models.Comment{}, &models.Follower{}, &models.BlockedUser{}, &models.Chat_Room{}, &models.Chat_Message{})
+	db.AutoMigrate(&models.User{}, &models.Post{}, &models.Like{}, &models.Comment{}, &models.Follower{}, &models.BlockedUser{}, &models.ChatMessage{}, &models.ChatRoom{})
 
 	app := fiber.New(fiber.Config{
 		BodyLimit:         20 * 1024 * 1024,
@@ -193,5 +193,5 @@ func setUpRoute(app *fiber.App) {
 
 	app.Use("/chat", middleware.AuthRequiredHeader)
 
-	app.Get("/chat", websocket.New(functional.MessageSocket(chatServer)))
+	app.Get("/chat/:rid", websocket.New(functional.MessageSocket(chatServer)))
 }

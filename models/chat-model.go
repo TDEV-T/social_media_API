@@ -5,24 +5,38 @@ import (
 	"gorm.io/gorm"
 )
 
-type Chat_Room struct {
+type ChatRoom struct {
 	gorm.Model
-	SenderUserID   uint
-	ReceiverUserID uint
-	StatusChat     uint `gorm:"default:active"`
-	sender         User `gorm:"foreignkey:SenderUserID"`
-	receiver       User `gorm:"foreignkey:ReceiverUserID"`
+	Members []User `gorm:"many2many:chat_room_members;"`
 }
 
-type Chat_Message struct {
-	ChatRoomID uint
-	ChatRoom   Chat_Room `gorm:""`
+type ChatMessage struct {
+	gorm.Model
+	SenderID uint
+	RoomID   uint
+	Message  string
 }
 
-func (ch *Chat_Room) TableName() string {
-	return "chat_rooms"
+func (cr *ChatRoom) TableName() string {
+	return "chat_room"
+}
+
+func (cm *ChatMessage) TableName() string {
+	return "chat_message"
 }
 
 func CreateTable(db *gorm.DB, c *fiber.Ctx) error {
 	return nil
+}
+
+func ChatRoomExists(db *gorm.DB, user1ID, user2ID uint) (bool, error) {
+	var count int64
+
+	err := db.Table("chat_rooms").Joins("JOIN char_room_members on chat_room_members.chat_room_id = chat_rooms.id").Where("chat_room_members.user_id IN (?)", []uint{user1ID, user2ID}).Group("chat_rooms.id").Having("COUNT(DISTINCT chat_room_members.user_id) = ? ", 2).Count(&count).Error
+
+	if err != nil {
+		return false, err
+	}
+
+	return count > 0, nil
 }
