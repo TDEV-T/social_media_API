@@ -29,8 +29,6 @@ type User struct {
 	Comments         []Comment     `gorm:"foreignKey:UserID"`
 	Followers        []Follower    `gorm:"foreignKey:FollowingUserID"`
 	BlockedUsers     []BlockedUser `gorm:"foreignKey:BlockingUserID"`
-	SentChats        []Chat        `gorm:"foreignKey:SenderUserID"`
-	ReceivedChats    []Chat        `gorm:"foreignKey:ReceiverUserID"`
 }
 
 func (u *User) TableName() string {

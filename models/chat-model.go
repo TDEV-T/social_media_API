@@ -1,14 +1,28 @@
 package models
 
-import "gorm.io/gorm"
+import (
+	"github.com/gofiber/fiber/v2"
+	"gorm.io/gorm"
+)
 
-type Chat struct {
+type Chat_Room struct {
 	gorm.Model
 	SenderUserID   uint
 	ReceiverUserID uint
-	Message        string
+	StatusChat     uint `gorm:"default:active"`
+	sender         User `gorm:"foreignkey:SenderUserID"`
+	receiver       User `gorm:"foreignkey:ReceiverUserID"`
 }
 
-func (ch *Chat) TableName() string {
-	return "chats"
+type Chat_Message struct {
+	ChatRoomID uint
+	ChatRoom   Chat_Room `gorm:""`
+}
+
+func (ch *Chat_Room) TableName() string {
+	return "chat_rooms"
+}
+
+func CreateTable(db *gorm.DB, c *fiber.Ctx) error {
+	return nil
 }

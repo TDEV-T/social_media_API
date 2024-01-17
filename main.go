@@ -10,6 +10,7 @@ import (
 	"tdev/middleware"
 	"tdev/models"
 
+	"github.com/gofiber/contrib/websocket"
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
 	"gorm.io/driver/postgres"
@@ -46,13 +47,44 @@ func main() {
 	if err != nil {
 		panic("failed to connect database")
 	}
-	db.AutoMigrate(&models.User{}, &models.Post{}, &models.Like{}, &models.Comment{}, &models.Follower{}, &models.BlockedUser{}, &models.Chat{})
+	db.AutoMigrate(&models.User{}, &models.Post{}, &models.Like{}, &models.Comment{}, &models.Follower{}, &models.BlockedUser{}, &models.Chat_Room{}, &models.Chat_Message{})
 
 	app := fiber.New(fiber.Config{
 		BodyLimit:         20 * 1024 * 1024,
 		StreamRequestBody: true,
 	})
 
+	setUpRoute(app)
+
+	app.Listen(":" + portOpen)
+}
+
+func SetupDatabase() *gorm.DB {
+	dsn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", host, port, user, password, dbname)
+
+	newLogger := logger.New(
+		log.New(os.Stdout, "\r\n", log.LstdFlags),
+		logger.Config{
+			SlowThreshold: time.Second,
+			LogLevel:      logger.Info,
+			Colorful:      true,
+		},
+	)
+
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{Logger: newLogger})
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return db
+}
+
+var chatServer = &functional.ChatServer{
+	Clients: make(map[*websocket.Conn]struct{}),
+}
+
+func setUpRoute(app *fiber.App) {
 	app.Post("/login", func(c *fiber.Ctx) error {
 		return models.LoginUser(db, c)
 	})
@@ -151,26 +183,15 @@ func main() {
 	app.Get("/images/:imageName", functional.GetImageHandler)
 	app.Get("/video/:video", functional.StreamVideo)
 
-	app.Listen(":" + portOpen)
-}
+	app.Use("/chat", func(c *fiber.Ctx) error {
+		if websocket.IsWebSocketUpgrade(c) {
+			c.Locals("allowed", true)
+			return c.Next()
+		}
+		return fiber.ErrUpgradeRequired
+	})
 
-func SetupDatabase() *gorm.DB {
-	dsn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", host, port, user, password, dbname)
+	app.Use("/chat", middleware.AuthRequiredHeader)
 
-	newLogger := logger.New(
-		log.New(os.Stdout, "\r\n", log.LstdFlags),
-		logger.Config{
-			SlowThreshold: time.Second,
-			LogLevel:      logger.Info,
-			Colorful:      true,
-		},
-	)
-
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{Logger: newLogger})
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return db
+	app.Get("/chat", websocket.New(functional.MessageSocket(chatServer)))
 }
