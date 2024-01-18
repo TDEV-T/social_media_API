@@ -19,11 +19,6 @@ type ChatMessage struct {
 	sender User `gorm:"foreignkey:SenderID"`
 }
 
-type RoomExistsResult struct {
-	count  int
-	roomID uint
-}
-
 func (cr *ChatRoom) TableName() string {
 	return "chat_rooms"
 }
@@ -37,9 +32,9 @@ func CreateTable(db *gorm.DB, c *fiber.Ctx) error {
 }
 
 func ChatRoomExists(db *gorm.DB, user1ID, user2ID uint) (bool, error, uint) {
-	RoomResult := new(RoomExistsResult)
+	RoomResult := new(ChatRoom)
 
-	err := db.Table("chat_rooms").Joins("JOIN char_room_members on chat_room_members.chat_room_id = chat_rooms.id").Where("chat_room_members.user_id IN (?)", []uint{user1ID, user2ID}).Group("chat_rooms.id").Having("COUNT(DISTINCT chat_room_members.user_id) = ? ", 2).First(RoomResult).Error
+	err := db.Table("chat_rooms").Joins("JOIN chat_room_members on chat_room_members.chat_room_id = chat_rooms.id").Where("chat_room_members.user_id IN (?)", []uint{user1ID, user2ID}).Group("chat_rooms.id").Having("COUNT(DISTINCT chat_room_members.user_id) = ? ", 2).First(RoomResult).Error
 
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
@@ -48,7 +43,7 @@ func ChatRoomExists(db *gorm.DB, user1ID, user2ID uint) (bool, error, uint) {
 		return false, err, 0
 	}
 
-	return true, nil, RoomResult.roomID
+	return true, nil, RoomResult.ID
 }
 
 func GetChatDetail(db *gorm.DB, rid uint) ([]ChatMessage, error) {
@@ -88,9 +83,13 @@ func CreateChatRoom(db *gorm.DB, u1 uint, u2 uint) (ChatRoom, error) {
 		return room, err
 	}
 
-	room.Members = append(room.Members, user1, user2)
+	// Save the ChatRoom first
+	if err := db.Create(&room).Error; err != nil {
+		return room, err
+	}
 
-	if err := db.Save(&room).Error; err != nil {
+	// Then append the Members and save again
+	if err := db.Model(&room).Association("Members").Append([]User{user1, user2}).Error; err != nil {
 		return room, err
 	}
 
