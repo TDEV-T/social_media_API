@@ -1,7 +1,8 @@
 package models
 
 import (
-	"github.com/gofiber/fiber/v2"
+	"fmt"
+
 	"gorm.io/gorm"
 )
 
@@ -16,7 +17,7 @@ type ChatMessage struct {
 	RoomID   uint
 	Message  string
 
-	sender User `gorm:"foreignkey:SenderID"`
+	Sender User `gorm:"foreignkey:SenderID"`
 }
 
 func (cr *ChatRoom) TableName() string {
@@ -25,10 +26,6 @@ func (cr *ChatRoom) TableName() string {
 
 func (cm *ChatMessage) TableName() string {
 	return "chat_message"
-}
-
-func CreateTable(db *gorm.DB, c *fiber.Ctx) error {
-	return nil
 }
 
 func ChatRoomExists(db *gorm.DB, user1ID, user2ID uint) (bool, error, uint) {
@@ -79,18 +76,18 @@ func CreateChatRoom(db *gorm.DB, u1 uint, u2 uint) (ChatRoom, error) {
 		return room, err
 	}
 
-	if err := db.First(&user2, u1).Error; err != nil {
+	if err := db.First(&user2, u2).Error; err != nil {
 		return room, err
 	}
 
-	// Save the ChatRoom first
 	if err := db.Create(&room).Error; err != nil {
 		return room, err
 	}
 
-	// Then append the Members and save again
+	fmt.Printf("ChatRoom : %d \n", room.ID)
+
 	if err := db.Model(&room).Association("Members").Append([]User{user1, user2}).Error; err != nil {
-		return room, err
+		return room, nil
 	}
 
 	return room, nil
@@ -102,11 +99,11 @@ func CreateMessage(db *gorm.DB, userID uint, msg string, conId uint) (ChatMessag
 	var user User
 	var chatR ChatRoom
 
-	if err := db.First(&user, conId).Error; err != nil {
+	if err := db.First(&user, userID).Error; err != nil {
 		return chatmsg, err
 	}
 
-	if err := db.First(&chatR, userID).Error; err != nil {
+	if err := db.First(&chatR, conId).Error; err != nil {
 		return chatmsg, err
 	}
 

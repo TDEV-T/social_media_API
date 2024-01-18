@@ -123,25 +123,43 @@ func MessageSocket(db *gorm.DB, cs *ChatServer) func(c *websocket.Conn) {
 			}
 
 			rid = result.ID
+		} else {
+			messages, err := models.GetChatDetail(db, rid)
+
+			if err != nil {
+				log.Println(err)
+				c.WriteMessage(websocket.TextMessage, []byte("Error :"+err.Error()))
+				c.Close()
+				return
+			}
+
+			for _, msg := range messages {
+				c.WriteMessage(websocket.TextMessage, []byte(msg.Message))
+			}
 		}
 
 		conId := strconv.Itoa(int(rid))
 
+		cs.AddClient(c, conId)
+		defer cs.RemoveClient(c, conId)
+		defer c.Close()
+
 		for {
 			mt, msg, err := c.ReadMessage()
+
+			if err != nil {
+				log.Println("read error:", err)
+				break
+			}
 
 			_, err = models.CreateMessage(db, userLocal.ID, string(msg), rid)
 
 			if err != nil {
-				log.Println("read error:", err)
+				log.Println("Create error:", err)
 				c.WriteMessage(websocket.TextMessage, []byte("Error : "+err.Error()))
 				c.Close()
 				break
 			}
-
-			cs.AddClient(c, conId)
-			defer cs.RemoveClient(c, conId)
-			defer c.Close()
 
 			fmt.Printf("User : %s , Received message: %s\n", userLocal.Username, msg)
 
