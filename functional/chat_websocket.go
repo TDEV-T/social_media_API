@@ -15,7 +15,7 @@ import (
 type ChatServer struct {
 	mu            sync.Mutex
 	Clients       map[*websocket.Conn]struct{}
-	Conversations map[string]map[*websocket.Conn]struct{} // New map to track conversations
+	Conversations map[string]map[*websocket.Conn]struct{}
 }
 
 func (cs *ChatServer) AddClient(c *websocket.Conn, conversationID string) {

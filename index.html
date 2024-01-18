@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Chat Test</title>
+    <style>
+      #chatList {
+        margin-bottom: 20px;
+      }
+      #chat {
+        height: 300px;
+        border: 1px solid #ccc;
+        padding: 10px;
+        overflow-y: scroll;
+        margin-bottom: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Chat Rooms</h2>
+    <div id="chatList"></div>
+    <h2>Chat</h2>
+    <div id="chat"></div>
+    <form id="messageForm">
+      <input id="messageInput" type="text" />
+      <button type="submit">Send</button>
+    </form>
+  </body>
+</html>
+
+<script>
+  // chat.js
+
+  var myid = 44;
+
+  var receiverID = null;
+
+  var socket = null;
+
+  var token =
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MDU4NDE0ODQsInVzZXJfaWQiOjQ0LCJ1c2VyX25hbWUiOiJ0ZGV2NTkiLCJ1c2VyX3JvbGUiOiJ1c2VyIn0.4JMA9U3Y3MY7zaFLhoWkfNlTbX2JRQF48EktUXi7UUY";
+
+  var listSocket = new WebSocket(
+    "ws://localhost:8080/chatAll?authtoken=" + token
+  );
+
+  listSocket.onopen = function (e) {
+    console.log("[open] Connection on list Socket");
+  };
+
+  listSocket.onmessage = function (event) {
+    var data = JSON.parse(event.data);
+    var listChat = document.getElementById("chatList");
+    var members = data.Members.map(function (member) {
+      return member.username; // ใช้ username ของสมาชิก
+    }).join(", ");
+
+    var receiverIDCheck = filterID(myid, data.Members);
+
+    listChat.innerHTML +=
+      "<li><button onclick='openChat(" +
+      receiverIDCheck +
+      ")'>" +
+      members +
+      "</button></li>";
+  };
+
+  function openChat(id) {
+    receiverID = id;
+    socket = new WebSocket(
+      `ws://localhost:8080/chat?authtoken=${token}&receiverId=${receiverID}`
+    );
+
+    socket.onopen = function (e) {
+      console.log("[open] Chat ID" + id);
+    };
+
+    socket.onmessage = function (event) {
+      var chat = document.getElementById("chat");
+      chat.innerHTML += "<p>" + event.data + "</p>";
+    };
+  }
+
+  function filterID(id, members) {
+    let member = members.filter(function (member) {
+      return member.ID !== myid;
+    });
+
+    return member[0].ID;
+  }
+
+
+  document
+    .getElementById("messageForm")
+    .addEventListener("submit", function (event) {
+      event.preventDefault();
+      var messageInput = document.getElementById("messageInput");
+      socket.send(messageInput.value);
+      messageInput.value = "";
+    });
+</script>
