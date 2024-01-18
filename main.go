@@ -193,5 +193,5 @@ func setUpRoute(app *fiber.App) {
 
 	app.Use("/chat", middleware.AuthRequiredHeader)
 
-	app.Get("/chat/:rid", websocket.New(functional.MessageSocket(chatServer)))
+	app.Get("/chat/:rid", websocket.New(functional.MessageSocket(db, chatServer)))
 }
