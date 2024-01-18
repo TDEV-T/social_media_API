@@ -193,5 +193,8 @@ func setUpRoute(app *fiber.App) {
 
 	app.Use("/chat", middleware.AuthRequiredHeader)
 
+	app.Get("/chat/all", websocket.New(functional.GetAllChatRoomWithUserID(db)))
+
 	app.Get("/chat/:rid", websocket.New(functional.MessageSocket(db, chatServer)))
+
 }

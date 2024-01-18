@@ -68,6 +68,11 @@ func GetAllChatRoomWithUserID(db *gorm.DB) func(c *websocket.Conn) {
 			return
 		}
 
+		if err := c.WriteMessage(websocket.TextMessage, []byte("Connect Success")); err != nil {
+			log.Println(err)
+			return
+		}
+
 		for _, room := range rooms {
 			roomJson, err := json.Marshal(room)
 
@@ -88,7 +93,6 @@ func GetAllChatRoomWithUserID(db *gorm.DB) func(c *websocket.Conn) {
 func MessageSocket(db *gorm.DB, cs *ChatServer) func(c *websocket.Conn) {
 
 	return func(c *websocket.Conn) {
-		conId := c.Params("rid")
 		receiverID, err := strconv.Atoi(c.Params("receiverID"))
 
 		if err != nil {
@@ -110,35 +114,39 @@ func MessageSocket(db *gorm.DB, cs *ChatServer) func(c *websocket.Conn) {
 		}
 
 		if !checkChatExists {
-			for {
-				mt, msg, err := c.ReadMessage()
-				if err != nil {
-					log.Println("read error:", err)
-					break
-				}
-
-				cs.AddClient(c, conId)
-				defer cs.RemoveClient(c, conId)
-				defer c.Close()
-
-				fmt.Printf("User : %s , Received message: %s\n", userLocal.Username, msg)
-
-				cs.Broadcast(conId, mt, msg)
-
-			}
-		} else {
-			message, err := models.GetChatDetail(db, rid)
+			result, err := models.CreateChatRoom(db, userLocal.ID, uint(receiverID))
 
 			if err != nil {
 				log.Println(err)
-				c.WriteMessage(websocket.TextMessage, []byte("Error :"+err.Error()))
 				c.Close()
 				return
 			}
 
-			fmt.Println(message)
-
+			rid = result.ID
 		}
 
+		conId := strconv.Itoa(int(rid))
+
+		for {
+			mt, msg, err := c.ReadMessage()
+
+			_, err = models.CreateMessage(db, userLocal.ID, string(msg), rid)
+
+			if err != nil {
+				log.Println("read error:", err)
+				c.WriteMessage(websocket.TextMessage, []byte("Error : "+err.Error()))
+				c.Close()
+				break
+			}
+
+			cs.AddClient(c, conId)
+			defer cs.RemoveClient(c, conId)
+			defer c.Close()
+
+			fmt.Printf("User : %s , Received message: %s\n", userLocal.Username, msg)
+
+			cs.Broadcast(conId, mt, msg)
+
+		}
 	}
 }

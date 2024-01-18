@@ -74,3 +74,51 @@ func GetAllChatWithUserID(db *gorm.DB, userID uint) ([]ChatRoom, error) {
 	return rooms, nil
 
 }
+
+func CreateChatRoom(db *gorm.DB, u1 uint, u2 uint) (ChatRoom, error) {
+	var room ChatRoom
+
+	var user1, user2 User
+
+	if err := db.First(&user1, u1).Error; err != nil {
+		return room, err
+	}
+
+	if err := db.First(&user2, u1).Error; err != nil {
+		return room, err
+	}
+
+	room.Members = append(room.Members, user1, user2)
+
+	if err := db.Save(&room).Error; err != nil {
+		return room, err
+	}
+
+	return room, nil
+}
+
+func CreateMessage(db *gorm.DB, userID uint, msg string, conId uint) (ChatMessage, error) {
+	var chatmsg ChatMessage
+
+	var user User
+	var chatR ChatRoom
+
+	if err := db.First(&user, conId).Error; err != nil {
+		return chatmsg, err
+	}
+
+	if err := db.First(&chatR, userID).Error; err != nil {
+		return chatmsg, err
+	}
+
+	chatmsg.SenderID = user.ID
+	chatmsg.Message = msg
+	chatmsg.RoomID = chatR.ID
+
+	if err := db.Save(&chatmsg).Error; err != nil {
+		return chatmsg, err
+	}
+
+	return chatmsg, nil
+
+}
