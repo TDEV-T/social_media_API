@@ -179,3 +179,16 @@ func DeletePosts(db *gorm.DB, c *fiber.Ctx) error {
 	return c.Status(fiber.StatusAccepted).SendString("Delete Success !")
 
 }
+
+func GetFollowerFeed(db *gorm.DB, c *fiber.Ctx) error {
+	userLocal := c.Locals("user").(*User)
+
+	followerPosts, err := GetPostsFollower(db, userLocal.ID)
+
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
+	}
+
+	return c.JSON(followerPosts)
+
+}
