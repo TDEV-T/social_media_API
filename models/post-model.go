@@ -2,6 +2,7 @@ package models
 
 import (
 	"encoding/json"
+	"fmt"
 	"strconv"
 
 	"github.com/gofiber/fiber/v2"
@@ -79,6 +80,22 @@ func GetPosts(db *gorm.DB, c *fiber.Ctx) error {
 
 }
 
+func GetPostById(db *gorm.DB, c *fiber.Ctx) error {
+
+	id := c.Params("id")
+
+	var PostsWithComment Post
+
+	result := db.Preload("User", func(db *gorm.DB) *gorm.DB { return db.Select("id", "username", "full_name", "profile_picture") }).Preload("Comments").Preload("Comments.User", func(db *gorm.DB) *gorm.DB { return db.Select("id", "username", "full_name", "profile_picture") }).Preload("Likes").Preload("Likes.User", func(db *gorm.DB) *gorm.DB { return db.Select("id") }).Where("id = ?", id).Find(&PostsWithComment)
+
+	if result.Error != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString(result.Error.Error())
+	}
+
+	return c.JSON(PostsWithComment)
+
+}
+
 func GetPostsPublic(db *gorm.DB) ([]Post, error) {
 	var publicPost []Post
 
@@ -101,9 +118,9 @@ func GetPostsFollower(db *gorm.DB, userId uint) ([]Post, error) {
 		return nil, err
 	}
 
-	if friendIDs == nil {
-		return nil, nil
-	}
+	// if friendIDs == nil {
+	// 	return nil, nil
+	// }
 
 	result := db.Where("user_id IN ?", friendIDs).Preload("User", func(db *gorm.DB) *gorm.DB { return db.Select("id", "username", "full_name", "profile_picture") }).Preload("Comments").Preload("Comments.User", func(db *gorm.DB) *gorm.DB { return db.Select("id", "username", "full_name", "profile_picture") }).Preload("Likes").Preload("Likes.User", func(db *gorm.DB) *gorm.DB { return db.Select("id") }).Find(&friendPosts)
 	if result.Error != nil {
@@ -188,6 +205,8 @@ func GetFollowerFeed(db *gorm.DB, c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
 	}
+
+	fmt.Println(followerPosts)
 
 	return c.JSON(followerPosts)
 

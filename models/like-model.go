@@ -56,7 +56,7 @@ func DeleteLike(db *gorm.DB, c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).SendString(err.Error())
 	}
 
-	result := db.Unscoped().Delete(&Like{}, id)
+	result := db.Unscoped().Where("post_id = ? AND user_id = ?", id, userLocal.ID).Delete(&Like{})
 
 	if result.Error != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": result.Error.Error()})

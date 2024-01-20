@@ -135,11 +135,16 @@ func setUpRoute(app *fiber.App) {
 	app.Get("/posts", func(c *fiber.Ctx) error {
 		return models.GetPosts(db, c)
 	})
+
 	app.Get("/posts/follower", func(c *fiber.Ctx) error {
 		return models.GetFollowerFeed(db, c)
 	})
 	app.Get("/posts/feed", func(c *fiber.Ctx) error {
 		return models.GetFeeds(db, c)
+	})
+
+	app.Get("/posts/:id", func(c *fiber.Ctx) error {
+		return models.GetPostById(db, c)
 	})
 	app.Delete("/posts/:id", func(c *fiber.Ctx) error {
 		return models.DeletePosts(db, c)
