@@ -162,6 +162,9 @@ func setUpRoute(app *fiber.App) {
 	})
 
 	app.Use("/follow", middleware.AuthRequiredHeader)
+	app.Get("/follow", func(c *fiber.Ctx) error {
+		return models.GetAllRequest(db, c)
+	})
 	app.Post("/follow/req", func(c *fiber.Ctx) error {
 		return models.RequestFollower(db, c)
 	})
@@ -186,6 +189,11 @@ func setUpRoute(app *fiber.App) {
 
 	app.Delete("/uploadfile/:name", func(c *fiber.Ctx) error {
 		return functional.DeleteFile(c)
+	})
+
+	app.Use("/search", middleware.AuthRequiredHeader)
+	app.Post("/search", func(c *fiber.Ctx) error {
+		return models.SearchFunc(db, c)
 	})
 
 	app.Get("/images/:imageName", functional.GetImageHandler)

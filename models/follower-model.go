@@ -9,9 +9,11 @@ import (
 
 type Follower struct {
 	gorm.Model
-	FollowingUserID uint
-	FollowerUserID  uint `json:"follower"`
+	FollowingUserID uint `json:"following"`
+	FollowerUserID  uint
 	Status          string
+	Follower        User `gorm:"foreignKey:FollowerUserID"`
+	Following       User `gorm:"foreignKey:FollowingUserID"`
 }
 
 func (f *Follower) TableName() string {
@@ -31,7 +33,7 @@ func RequestFollower(db *gorm.DB, c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
 	}
 
-	follower.FollowingUserID = userLocal.ID
+	follower.FollowerUserID = userLocal.ID
 	follower.Status = "pending"
 
 	var existingFollower Follower
@@ -104,4 +106,51 @@ func UnFollower(db *gorm.DB, c *fiber.Ctx) error {
 		"message": "Delete Success",
 	})
 
+}
+
+func GetFollowingRequest(db *gorm.DB, userID uint) ([]Follower, error) {
+
+	var FollowingRequest []Follower
+
+	result := db.Where("following_user_id = ? ", userID).Preload("Follower", func(db *gorm.DB) *gorm.DB { return db.Select("id", "username", "full_name", "profile_picture") }).Preload("Following", func(db *gorm.DB) *gorm.DB { return db.Select("id", "username", "full_name", "profile_picture") }).Find(&FollowingRequest)
+
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	return FollowingRequest, nil
+
+}
+
+func GetFollowerRequest(db *gorm.DB, userID uint) ([]Follower, error) {
+	var FollowerRequest []Follower
+	result := db.Where("follower_user_id = ?", userID).Preload("Follower", func(db *gorm.DB) *gorm.DB { return db.Select("id", "username", "full_name", "profile_picture") }).Preload("Following", func(db *gorm.DB) *gorm.DB { return db.Select("id", "username", "full_name", "profile_picture") }).Find(&FollowerRequest)
+
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	return FollowerRequest, nil
+}
+
+func GetAllRequest(db *gorm.DB, c *fiber.Ctx) error {
+	userLocal := c.Locals("user").(*User)
+
+	if userLocal == nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Error can't get User Data"})
+	}
+
+	FollowerReq, err := GetFollowerRequest(db, userLocal.ID)
+
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+	}
+
+	FollowingReq, err := GetFollowingRequest(db, userLocal.ID)
+
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{"FollowerRequest": FollowerReq, "FollowingRequset": FollowingReq})
 }
