@@ -3,6 +3,7 @@ package models
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"strconv"
 
 	"github.com/gofiber/fiber/v2"
@@ -209,5 +210,83 @@ func GetFollowerFeed(db *gorm.DB, c *fiber.Ctx) error {
 	fmt.Println(followerPosts)
 
 	return c.JSON(followerPosts)
+
+}
+
+func UpdatePost(db *gorm.DB, c *fiber.Ctx) error {
+	userLocal := c.Locals("user").(*User)
+	pid := c.Params("pid")
+
+	if userLocal == nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"message": "Can't get User Data",
+		})
+	}
+
+	post := new(Post)
+
+	db.First(&post, pid)
+
+	if post.UserID != userLocal.ID {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"message": "Error Unauthorized",
+		})
+	}
+
+	if err := c.BodyParser(post); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": err.Error(),
+		})
+	}
+
+	imageLocal := c.Locals("images").([]string)
+
+	imageJson, err := json.Marshal(imageLocal)
+
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).SendString(err.Error())
+	}
+
+	oldImage := post.Image
+	post.Image = string(imageJson)
+
+	if post.Content == "" && post.Image == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": "Content or Image Is Null",
+		})
+	}
+
+	result := db.Save(post)
+
+	if result.Error != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": err.Error(),
+		})
+	}
+
+	var oldImageFiles []string
+
+	json.Unmarshal([]byte(oldImage), &oldImageFiles)
+
+	for _, oldImage := range oldImageFiles {
+		if !contains(imageLocal, oldImage) {
+			os.Remove("uploads/" + oldImage)
+		}
+	}
+
+	return c.JSON(fiber.Map{
+		"message": "Update Post Success",
+	})
+
+}
+
+func contains(s []string, str string) bool {
+	for _, v := range s {
+		if v == str {
+			return true
+		}
+	}
+
+	return false
 
 }

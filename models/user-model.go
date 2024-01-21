@@ -31,6 +31,28 @@ type User struct {
 	BlockedUsers     []BlockedUser `gorm:"foreignKey:BlockingUserID"`
 }
 
+type InputProfileUpdate struct {
+	ID               uint
+	FullName         string `json:"fullname"`
+	Email            string `gorm:"unique" json:"email"`
+	ProfilePicture   string
+	CoverfilePicture string
+	Bio              string `json:"bio"`
+	PrivateAccount   bool   `gorm:"default:false" json:"privatestatus"`
+}
+
+type UserProfile struct {
+	ID               uint
+	Username         string
+	FullName         string
+	Email            string
+	ProfilePicture   string
+	CoverfilePicture string
+	Bio              string
+	PrivateAccount   bool
+	Posts            []Post `gorm:"foreignKey:UserID"`
+}
+
 func (u *User) TableName() string {
 	return "users"
 }
@@ -81,11 +103,13 @@ func CreateUser(db *gorm.DB, c *fiber.Ctx) error {
 func GetUserById(db *gorm.DB, c *fiber.Ctx) error {
 	id := c.Params("id")
 
-	var usr User
-	result := db.First(&usr, id)
+	var usr UserProfile
+	result := db.Model(&User{}).Where("id = ?", id).Preload("Posts").First(&usr)
 
 	if result.Error != nil {
-		return result.Error
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"message": "User not Found !",
+		})
 	}
 
 	return c.JSON(&usr)
@@ -93,20 +117,46 @@ func GetUserById(db *gorm.DB, c *fiber.Ctx) error {
 
 func UpdateUser(db *gorm.DB, c *fiber.Ctx) error {
 
+	userLocal := c.Locals("user").(*User)
+
+	profilePicture := c.Locals("profilepicture").(string)
+	cloverPicture := c.Locals("cloverpicture").(string)
+
 	id, err := strconv.Atoi(c.Params("id"))
+
+	if userLocal.ID != uint(id) {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "UnAuth"})
+	}
 
 	if err != nil {
 		return c.SendStatus(fiber.StatusBadRequest)
 	}
 
-	usr := new(User)
+	usr := new(InputProfileUpdate)
 	if err := c.BodyParser(usr); err != nil {
 		return err
 	}
 
 	usr.ID = uint(id)
+	usr.ProfilePicture = profilePicture
+	usr.CoverfilePicture = cloverPicture
 
-	result := db.Save(&usr)
+	var exisingUser User
+
+	if err := db.Where("email = ? AND id != ?", usr.Email, id).First(&exisingUser).Error; err != gorm.ErrRecordNotFound {
+		return c.Status(fiber.StatusConflict).JSON(fiber.Map{
+			"message": "Email already in use",
+		})
+	}
+
+	result := db.Model(&User{}).Where("id = ?", usr.ID).Updates(User{
+		FullName:         usr.FullName,
+		Email:            usr.Email,
+		ProfilePicture:   usr.ProfilePicture,
+		CoverfilePicture: usr.CoverfilePicture,
+		Bio:              usr.Bio,
+		PrivateAccount:   usr.PrivateAccount,
+	})
 
 	if result.Error != nil {
 		return result.Error

@@ -119,7 +119,7 @@ func setUpRoute(app *fiber.App) {
 		return models.GetUserById(db, c)
 	})
 
-	app.Put("/users/:id", func(c *fiber.Ctx) error {
+	app.Put("/users/:id", middleware.UploadProfilePicture, func(c *fiber.Ctx) error {
 		return models.UpdateUser(db, c)
 	})
 
@@ -148,6 +148,9 @@ func setUpRoute(app *fiber.App) {
 	})
 	app.Delete("/posts/:id", func(c *fiber.Ctx) error {
 		return models.DeletePosts(db, c)
+	})
+	app.Patch("/posts/:pid", middleware.UploadFile, func(c *fiber.Ctx) error {
+		return models.UpdatePost(db, c)
 	})
 
 	app.Use("/comment", middleware.AuthRequiredHeader)
