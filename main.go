@@ -109,7 +109,7 @@ func setUpRoute(app *fiber.App) {
 
 	})
 
-	app.Use("/users", middleware.AuthRequired)
+	app.Use("/users", middleware.AuthRequiredHeader)
 
 	app.Get("/users", func(c *fiber.Ctx) error {
 		return c.JSON(models.GetUserAll(db, c))

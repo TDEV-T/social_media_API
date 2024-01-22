@@ -112,7 +112,14 @@ func GetUserById(db *gorm.DB, c *fiber.Ctx) error {
 		})
 	}
 
-	return c.JSON(&usr)
+	var PostWithUsr []Post
+
+	result = db.Preload("User", func(db *gorm.DB) *gorm.DB { return db.Select("id", "username", "full_name", "profile_picture") }).Preload("Comments").Preload("Comments.User", func(db *gorm.DB) *gorm.DB { return db.Select("id", "username", "full_name", "profile_picture") }).Preload("Likes").Preload("Likes.User", func(db *gorm.DB) *gorm.DB { return db.Select("id") }).Where("posts.user_id = ?", id).Find(&PostWithUsr)
+
+	return c.JSON(fiber.Map{
+		"user":  &usr,
+		"posts": &PostWithUsr,
+	})
 }
 
 func UpdateUser(db *gorm.DB, c *fiber.Ctx) error {
