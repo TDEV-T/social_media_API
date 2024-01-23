@@ -154,3 +154,60 @@ func GetAllRequest(db *gorm.DB, c *fiber.Ctx) error {
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{"FollowerRequest": FollowerReq, "FollowingRequset": FollowingReq})
 }
+
+func getFollowerAndFollowingCount(db *gorm.DB, userID uint) (int64, int64, error) {
+
+	var followerCount int64
+	var followingCount int64
+
+	result := db.Model(&Follower{}).Where("following_user_id = ? AND status = 'active'", userID).Count(&followerCount)
+
+	if result.Error != nil {
+		return 0, 0, result.Error
+	}
+
+	result = db.Model(&Follower{}).Where("follower_user_id = ? AND status = 'active'", userID).Count(&followingCount)
+
+	if result.Error != nil {
+		return 0, 0, result.Error
+	}
+
+	return followerCount, followingCount, nil
+}
+
+func checkFollowRequest(db *gorm.DB, userID uint, otherUserID uint) (string, error) {
+
+	if userID == otherUserID {
+		return "myself", nil
+	}
+
+	Follow := new(Follower)
+
+	result := db.Model(&Follower{}).Where("follower_user_id = ? AND following_user_id = ? ", userID, otherUserID).Find(Follow)
+	if result.Error != nil {
+		return "", result.Error
+	}
+	if Follow.Status != "" {
+		if Follow.Status == "pending" {
+			return Follow.Status, nil
+		} else if Follow.Status == "active" {
+			return Follow.Status, nil
+		}
+	}
+
+	result = db.Model(&Follower{}).Where("follower_user_id = ? AND following_user_id = ? ", otherUserID, userID).Find(Follow)
+
+	if result.Error != nil {
+		return "", result.Error
+	}
+
+	if Follow.Status != "" {
+		if Follow.Status == "pending" {
+			return "requested", nil
+		} else if Follow.Status == "active" {
+			return Follow.Status, nil
+		}
+	}
+
+	return "none", nil
+}

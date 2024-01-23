@@ -101,7 +101,21 @@ func CreateUser(db *gorm.DB, c *fiber.Ctx) error {
 }
 
 func GetUserById(db *gorm.DB, c *fiber.Ctx) error {
-	id := c.Params("id")
+	id, err := strconv.Atoi(c.Params("id"))
+
+	userLocal := c.Locals("user").(*User)
+
+	if userLocal == nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": "Can't get User DATA",
+		})
+	}
+
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": "Error Can't Get ID FROM URL",
+		})
+	}
 
 	var usr UserProfile
 	result := db.Model(&User{}).Where("id = ?", id).Preload("Posts").First(&usr)
@@ -116,9 +130,39 @@ func GetUserById(db *gorm.DB, c *fiber.Ctx) error {
 
 	result = db.Preload("User", func(db *gorm.DB) *gorm.DB { return db.Select("id", "username", "full_name", "profile_picture") }).Preload("Comments").Preload("Comments.User", func(db *gorm.DB) *gorm.DB { return db.Select("id", "username", "full_name", "profile_picture") }).Preload("Likes").Preload("Likes.User", func(db *gorm.DB) *gorm.DB { return db.Select("id") }).Where("posts.user_id = ?", id).Find(&PostWithUsr)
 
+	if result.Error != nil {
+
+		fmt.Println(result.Error.Error())
+
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": "Something Went Wrong !",
+		})
+	}
+
+	followerCount, followingCount, err := getFollowerAndFollowingCount(db, uint(id))
+
+	if err != nil {
+		fmt.Println(err.Error())
+
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": "Something Went Wrong !",
+		})
+	}
+
+	statusfollow, err := checkFollowRequest(db, userLocal.ID, uint(id))
+
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": "Can't Check Follow ",
+		})
+	}
+
 	return c.JSON(fiber.Map{
-		"user":  &usr,
-		"posts": &PostWithUsr,
+		"user":            &usr,
+		"posts":           &PostWithUsr,
+		"follower_count":  followerCount,
+		"following_count": followingCount,
+		"statusfollower":  statusfollow,
 	})
 }
 
