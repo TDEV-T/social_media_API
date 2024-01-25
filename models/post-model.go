@@ -216,6 +216,7 @@ func GetFollowerFeed(db *gorm.DB, c *fiber.Ctx) error {
 func UpdatePost(db *gorm.DB, c *fiber.Ctx) error {
 	userLocal := c.Locals("user").(*User)
 	pid := c.Params("pid")
+	imageCurrent := c.FormValue("imageCurrent")
 
 	if userLocal == nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
@@ -240,6 +241,15 @@ func UpdatePost(db *gorm.DB, c *fiber.Ctx) error {
 	}
 
 	imageLocal := c.Locals("images").([]string)
+	var imageCurString []string
+
+	if imageCurrent != "" {
+		json.Unmarshal([]byte(imageCurrent), &imageCurString)
+
+		if len(imageCurString) > 0 {
+			imageLocal = append(imageLocal, imageCurString...)
+		}
+	}
 
 	imageJson, err := json.Marshal(imageLocal)
 
@@ -271,6 +281,7 @@ func UpdatePost(db *gorm.DB, c *fiber.Ctx) error {
 	for _, oldImage := range oldImageFiles {
 		if !contains(imageLocal, oldImage) {
 			os.Remove("uploads/" + oldImage)
+			fmt.Println("Delete File : " + oldImage)
 		}
 	}
 

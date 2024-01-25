@@ -189,9 +189,9 @@ func checkFollowRequest(db *gorm.DB, userID uint, otherUserID uint) (string, err
 	}
 	if Follow.Status != "" {
 		if Follow.Status == "pending" {
-			return Follow.Status, nil
+			return "pending_send", nil
 		} else if Follow.Status == "active" {
-			return Follow.Status, nil
+			return "active_send", nil
 		}
 	}
 
@@ -203,9 +203,9 @@ func checkFollowRequest(db *gorm.DB, userID uint, otherUserID uint) (string, err
 
 	if Follow.Status != "" {
 		if Follow.Status == "pending" {
-			return "requested", nil
+			return "pending_recei", nil
 		} else if Follow.Status == "active" {
-			return Follow.Status, nil
+			return "active_recei", nil
 		}
 	}
 
