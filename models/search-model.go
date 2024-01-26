@@ -48,7 +48,7 @@ func searchOnUser(db *gorm.DB, search string, uid uint) ([]User, error) {
 
 	var userList []User
 
-	result := db.Table("users").Where("id != ? AND username LIKE ? OR full_name LIKE ?", uid, "%"+search+"%", "%"+search+"%").Find(&userList)
+	result := db.Table("users").Select("id", "username", "full_name", "profile_picture").Where("id != ? AND username LIKE ? OR full_name LIKE ?", uid, "%"+search+"%", "%"+search+"%").Find(&userList)
 
 	if result.Error != nil {
 		return nil, result.Error
