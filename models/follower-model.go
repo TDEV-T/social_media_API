@@ -1,8 +1,6 @@
 package models
 
 import (
-	"strconv"
-
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
 )
@@ -10,7 +8,7 @@ import (
 type Follower struct {
 	gorm.Model
 	FollowingUserID uint `json:"following"`
-	FollowerUserID  uint
+	FollowerUserID  uint `json:"follower"`
 	Status          string
 	Follower        User `gorm:"foreignKey:FollowerUserID"`
 	Following       User `gorm:"foreignKey:FollowingUserID"`
@@ -50,7 +48,7 @@ func RequestFollower(db *gorm.DB, c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).SendString(result.Error.Error())
 	}
 
-	return c.Status(fiber.StatusAccepted).JSON(fiber.Map{"message": "following success !"})
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "following success !"})
 
 }
 
@@ -61,15 +59,16 @@ func AcceptFollower(db *gorm.DB, c *fiber.Ctx) error {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Error can't get User Local"})
 	}
 
-	id, err := strconv.Atoi(c.Params("id"))
+	follow := new(Follower)
 
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": "Error can't Get id "})
+	if err := c.BodyParser(follow); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": err.Error()})
 	}
 
 	follower := Follower{Status: "accept"}
 
-	result := db.Model(&Follower{}).Where("id = ?", id).UpdateColumns(follower)
+	result := db.Model(&Follower{}).Where("follower_user_id = ? AND following_user_id = ?", userLocal.ID, follow.FollowingUserID).UpdateColumns(follower)
 
 	if result.Error != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString(result.Error.Error())
@@ -90,13 +89,14 @@ func UnFollower(db *gorm.DB, c *fiber.Ctx) error {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Error can't get User Local"})
 	}
 
-	id, err := strconv.Atoi(c.Params("id"))
+	following := new(Follower)
 
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": "Error can't get id"})
+	if err := c.BodyParser(following); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": err.Error()})
 	}
 
-	result := db.Unscoped().Delete(&Follower{}, id)
+	result := db.Unscoped().Where("follower_user_id = ? AND following_user_id = ?", userLocal.ID, following.FollowingUserID).Delete(&Follower{})
 
 	if result.Error != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": result.Error.Error()})

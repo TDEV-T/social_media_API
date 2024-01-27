@@ -340,6 +340,7 @@ func LoginUser(db *gorm.DB, c *fiber.Ctx) error {
 		"userid":    selectedUser.ID,
 		"username":  selectedUser.Username,
 		"userrole":  selectedUser.Role,
+		"userimg":   selectedUser.ProfilePicture,
 		"message":   "Login Successfully",
 		"status":    true,
 		"useremail": selectedUser.Email,
@@ -352,14 +353,14 @@ func GetFriendIDs(db *gorm.DB, userId uint) ([]uint, error) {
 
 	var followers []Follower
 
-	result := db.Where("following_user_id = ? ", userId).Find(&followers)
+	result := db.Where("follower_user_id = ? ", userId).Find(&followers)
 
 	if result.Error != nil {
 		return nil, result.Error
 	}
 
 	for _, follower := range followers {
-		friendIDs = append(friendIDs, follower.FollowerUserID)
+		friendIDs = append(friendIDs, follower.FollowingUserID)
 	}
 
 	return friendIDs, nil

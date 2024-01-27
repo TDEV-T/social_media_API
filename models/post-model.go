@@ -119,10 +119,6 @@ func GetPostsFollower(db *gorm.DB, userId uint) ([]Post, error) {
 		return nil, err
 	}
 
-	// if friendIDs == nil {
-	// 	return nil, nil
-	// }
-
 	result := db.Where("user_id IN ?", friendIDs).Preload("User", func(db *gorm.DB) *gorm.DB { return db.Select("id", "username", "full_name", "profile_picture") }).Preload("Comments").Preload("Comments.User", func(db *gorm.DB) *gorm.DB { return db.Select("id", "username", "full_name", "profile_picture") }).Preload("Likes").Preload("Likes.User", func(db *gorm.DB) *gorm.DB { return db.Select("id") }).Find(&friendPosts)
 	if result.Error != nil {
 		return nil, result.Error
@@ -207,7 +203,9 @@ func GetFollowerFeed(db *gorm.DB, c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
 	}
 
-	fmt.Println(followerPosts)
+	if followerPosts != nil && len(followerPosts) > 0 {
+		SortPostByCreatedAt(followerPosts)
+	}
 
 	return c.JSON(followerPosts)
 

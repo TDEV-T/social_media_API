@@ -174,7 +174,7 @@ func setUpRoute(app *fiber.App) {
 	app.Post("/follow/accept/:id", func(c *fiber.Ctx) error {
 		return models.AcceptFollower(db, c)
 	})
-	app.Delete("/follow/unfollow/:id", func(c *fiber.Ctx) error {
+	app.Delete("/follow/unfollow", func(c *fiber.Ctx) error {
 		return models.UnFollower(db, c)
 	})
 
