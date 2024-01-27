@@ -366,3 +366,33 @@ func GetFriendIDs(db *gorm.DB, userId uint) ([]uint, error) {
 	return friendIDs, nil
 
 }
+
+func CheckCurUser(db *gorm.DB, c *fiber.Ctx) error {
+	userLocal := c.Locals("user").(*User)
+
+	if userLocal == nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Can't Get Data"})
+	}
+
+	userFound := new(User)
+
+	result := db.First(userFound, userLocal.ID)
+
+	if result.Error != nil {
+		fmt.Println(result.Error.Error())
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Can't Get User Data"})
+	}
+
+	if userFound == nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Can't Get User Data"})
+	}
+
+	return c.JSON(fiber.Map{
+		"status":    true,
+		"useremail": userFound.Email,
+		"userid":    userFound.ID,
+		"userimg":   userFound.ProfilePicture,
+		"username":  userFound.Username,
+		"userrole":  userFound.Role,
+	})
+}

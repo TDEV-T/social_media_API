@@ -94,19 +94,7 @@ func setUpRoute(app *fiber.App) {
 	})
 
 	app.Post("/checkCurUser", middleware.AuthRequiredHeader, func(c *fiber.Ctx) error {
-		userLocal := c.Locals("user").(*models.User)
-
-		if userLocal == nil {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Can't Get Data"})
-		}
-
-		return c.JSON(fiber.Map{
-			"status":       true,
-			"userId":       userLocal.ID,
-			"userRole":     userLocal.ID,
-			"userUsername": userLocal.Username,
-		})
-
+		return models.CheckCurUser(db, c)
 	})
 
 	app.Use("/users", middleware.AuthRequiredHeader)
