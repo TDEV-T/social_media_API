@@ -1,8 +1,6 @@
 package models
 
 import (
-	"fmt"
-
 	"gorm.io/gorm"
 )
 
@@ -75,7 +73,6 @@ func GetAllChatWithUserID(db *gorm.DB, userID uint) ([]ChatRoom, error) {
 
 func CreateChatRoom(db *gorm.DB, u1 uint, u2 uint) (ChatRoom, error) {
 	var room ChatRoom
-
 	var user1, user2 User
 
 	if err := db.First(&user1, u1).Error; err != nil {
@@ -86,14 +83,12 @@ func CreateChatRoom(db *gorm.DB, u1 uint, u2 uint) (ChatRoom, error) {
 		return room, err
 	}
 
-	if err := db.Create(&room).Error; err != nil {
-		return room, err
+	room = ChatRoom{
+		Members: []User{user1, user2},
 	}
 
-	fmt.Printf("ChatRoom : %d \n", room.ID)
-
-	if err := db.Model(&room).Association("Members").Append([]User{user1, user2}).Error; err != nil {
-		return room, nil
+	if err := db.Create(&room).Error; err != nil {
+		return room, err
 	}
 
 	return room, nil

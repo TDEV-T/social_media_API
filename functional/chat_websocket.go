@@ -90,6 +90,10 @@ func GetAllChatRoomWithUserID(db *gorm.DB) func(c *websocket.Conn) {
 	}
 }
 
+func JoinRoomChat(db *gorm.DB, cs *ChatServer) {
+
+}
+
 func MessageSocket(db *gorm.DB, cs *ChatServer) func(c *websocket.Conn) {
 
 	return func(c *websocket.Conn) {
