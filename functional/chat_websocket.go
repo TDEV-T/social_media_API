@@ -68,10 +68,10 @@ func GetAllChatRoomWithUserID(db *gorm.DB) func(c *websocket.Conn) {
 			return
 		}
 
-		if err := c.WriteMessage(websocket.TextMessage, []byte("Connect Success")); err != nil {
-			log.Println(err)
-			return
-		}
+		// if err := c.WriteMessage(websocket.TextMessage, []byte("Connect Success")); err != nil {
+		// 	log.Println(err)
+		// 	return
+		// }
 
 		for _, room := range rooms {
 			roomJson, err := json.Marshal(room)

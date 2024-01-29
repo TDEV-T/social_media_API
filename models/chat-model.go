@@ -61,7 +61,9 @@ func GetChatDetail(db *gorm.DB, rid uint) ([]ChatMessage, error) {
 func GetAllChatWithUserID(db *gorm.DB, userID uint) ([]ChatRoom, error) {
 	var rooms []ChatRoom
 
-	err := db.Joins("JOIN chat_room_members on chat_room_members.chat_room_id = chat_rooms.id").Where("chat_room_members.user_id = ?", userID).Preload("Members").Find(&rooms).Error
+	err := db.Joins("JOIN chat_room_members on chat_room_members.chat_room_id = chat_rooms.id").Where("chat_room_members.user_id = ?", userID).Preload("Members", func(db *gorm.DB) *gorm.DB {
+		return db.Select("id", "username", "full_name", "profile_picture").Where("id != ?", userID)
+	}).Find(&rooms).Error
 
 	if err != nil {
 		return nil, err
