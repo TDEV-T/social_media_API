@@ -2,7 +2,6 @@ package functional
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"strconv"
 	"sync"
@@ -42,12 +41,25 @@ func (cs *ChatServer) RemoveClient(c *websocket.Conn, conversationID string) {
 	delete(cs.Clients, c)
 }
 
-func (cs *ChatServer) Broadcast(conversationID string, mt int, msg []byte) {
+func (cs *ChatServer) Broadcast(conversationID string, mt int, msg []byte, uid uint) {
 	cs.mu.Lock()
 	defer cs.mu.Unlock()
 
 	for conn := range cs.Conversations[conversationID] {
-		err := conn.WriteMessage(mt, msg)
+		showMessage := map[string]interface{}{
+			"message": string(msg),
+			"sender":  uid,
+			"rid":     conversationID,
+		}
+
+		smj, err := json.Marshal(showMessage)
+
+		if err != nil {
+			log.Println(err)
+			return
+		}
+
+		err = conn.WriteMessage(websocket.TextMessage, smj)
 		if err != nil {
 			log.Println(err)
 			continue
@@ -67,11 +79,6 @@ func GetAllChatRoomWithUserID(db *gorm.DB) func(c *websocket.Conn) {
 			c.Close()
 			return
 		}
-
-		// if err := c.WriteMessage(websocket.TextMessage, []byte("Connect Success")); err != nil {
-		// 	log.Println(err)
-		// 	return
-		// }
 
 		for _, room := range rooms {
 			roomJson, err := json.Marshal(room)
@@ -138,7 +145,20 @@ func MessageSocket(db *gorm.DB, cs *ChatServer) func(c *websocket.Conn) {
 			}
 
 			for _, msg := range messages {
-				c.WriteMessage(websocket.TextMessage, []byte(msg.Message))
+				showMessage := map[string]interface{}{
+					"message": msg.Message,
+					"sender":  userLocal.ID,
+					"rid":     msg.RoomID,
+				}
+				shwmsgJson, err := json.Marshal(showMessage)
+
+				if err != nil {
+					log.Println(err)
+					c.WriteMessage(websocket.TextMessage, []byte("Error :"+err.Error()))
+					c.Close()
+					return
+				}
+				c.WriteMessage(websocket.TextMessage, shwmsgJson)
 			}
 		}
 
@@ -165,9 +185,7 @@ func MessageSocket(db *gorm.DB, cs *ChatServer) func(c *websocket.Conn) {
 				break
 			}
 
-			fmt.Printf("User : %s , Received message: %s\n", userLocal.Username, msg)
-
-			cs.Broadcast(conId, mt, msg)
+			cs.Broadcast(conId, mt, msg, userLocal.ID)
 
 		}
 	}
