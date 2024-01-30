@@ -147,7 +147,7 @@ func MessageSocket(db *gorm.DB, cs *ChatServer) func(c *websocket.Conn) {
 			for _, msg := range messages {
 				showMessage := map[string]interface{}{
 					"message": msg.Message,
-					"sender":  userLocal.ID,
+					"sender":  msg.SenderID,
 					"rid":     msg.RoomID,
 				}
 				shwmsgJson, err := json.Marshal(showMessage)
