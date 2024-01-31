@@ -138,7 +138,7 @@ func GetFollowingRequest(db *gorm.DB, userID uint) ([]Follower, error) {
 
 	var FollowingRequest []Follower
 
-	result := db.Where("following_user_id = ? ", userID).Preload("Follower", func(db *gorm.DB) *gorm.DB { return db.Select("id", "username", "full_name", "profile_picture") }).Preload("Following", func(db *gorm.DB) *gorm.DB { return db.Select("id", "username", "full_name", "profile_picture") }).Find(&FollowingRequest)
+	result := db.Where("following_user_id = ? AND status = 'pending'", userID).Preload("Follower", func(db *gorm.DB) *gorm.DB { return db.Select("id", "username", "full_name", "profile_picture") }).Preload("Following", func(db *gorm.DB) *gorm.DB { return db.Select("id", "username", "full_name", "profile_picture") }).Find(&FollowingRequest)
 
 	if result.Error != nil {
 		return nil, result.Error
@@ -150,7 +150,7 @@ func GetFollowingRequest(db *gorm.DB, userID uint) ([]Follower, error) {
 
 func GetFollowerRequest(db *gorm.DB, userID uint) ([]Follower, error) {
 	var FollowerRequest []Follower
-	result := db.Where("follower_user_id = ?", userID).Preload("Follower", func(db *gorm.DB) *gorm.DB { return db.Select("id", "username", "full_name", "profile_picture") }).Preload("Following", func(db *gorm.DB) *gorm.DB { return db.Select("id", "username", "full_name", "profile_picture") }).Find(&FollowerRequest)
+	result := db.Where("follower_user_id = ? AND status = 'pending'", userID).Preload("Follower", func(db *gorm.DB) *gorm.DB { return db.Select("id", "username", "full_name", "profile_picture") }).Preload("Following", func(db *gorm.DB) *gorm.DB { return db.Select("id", "username", "full_name", "profile_picture") }).Find(&FollowerRequest)
 
 	if result.Error != nil {
 		return nil, result.Error
@@ -178,7 +178,7 @@ func GetAllRequest(db *gorm.DB, c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
 	}
 
-	return c.Status(fiber.StatusOK).JSON(fiber.Map{"FollowerRequest": FollowerReq, "FollowingRequset": FollowingReq})
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{"FollowingReq": FollowerReq, "FollowerReq": FollowingReq})
 }
 
 func getFollowerAndFollowingCount(db *gorm.DB, userID uint) (int64, int64, error) {
