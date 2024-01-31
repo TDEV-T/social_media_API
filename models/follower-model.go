@@ -66,9 +66,9 @@ func AcceptFollower(db *gorm.DB, c *fiber.Ctx) error {
 			"message": err.Error()})
 	}
 
-	follower := Follower{Status: "accept"}
+	follower := Follower{Status: "active"}
 
-	result := db.Model(&Follower{}).Where("follower_user_id = ? AND following_user_id = ?", userLocal.ID, follow.FollowingUserID).UpdateColumns(follower)
+	result := db.Model(&Follower{}).Where("follower_user_id = ? AND following_user_id = ?", follow.FollowingUserID, userLocal.ID).UpdateColumns(follower)
 
 	if result.Error != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString(result.Error.Error())
@@ -97,6 +97,32 @@ func UnFollower(db *gorm.DB, c *fiber.Ctx) error {
 	}
 
 	result := db.Unscoped().Where("follower_user_id = ? AND following_user_id = ?", userLocal.ID, following.FollowingUserID).Delete(&Follower{})
+
+	if result.Error != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": result.Error.Error()})
+	}
+
+	return c.JSON(fiber.Map{
+		"message": "Delete Success",
+	})
+
+}
+
+func RejectFollow(db *gorm.DB, c *fiber.Ctx) error {
+	userLocal := c.Locals("user").(*User)
+
+	if userLocal == nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Error can't get User Local"})
+	}
+
+	following := new(Follower)
+
+	if err := c.BodyParser(following); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": err.Error()})
+	}
+
+	result := db.Unscoped().Where("follower_user_id = ? AND following_user_id = ?", following.FollowerUserID, userLocal.ID).Delete(&Follower{})
 
 	if result.Error != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": result.Error.Error()})

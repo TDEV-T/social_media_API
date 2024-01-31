@@ -165,6 +165,9 @@ func setUpRoute(app *fiber.App) {
 	app.Delete("/follow/unfollow", func(c *fiber.Ctx) error {
 		return models.UnFollower(db, c)
 	})
+	app.Delete("/follow/reject", func(c *fiber.Ctx) error {
+		return models.RejectFollow(db, c)
+	})
 
 	app.Use("/like", middleware.AuthRequiredHeader)
 	app.Post("/like", func(c *fiber.Ctx) error {

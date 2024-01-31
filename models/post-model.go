@@ -148,6 +148,7 @@ func GetFeeds(db *gorm.DB, c *fiber.Ctx) error {
 
 	if allFeed != nil && len(allFeed) > 0 {
 		SortPostByCreatedAt(allFeed)
+		allFeed = RemoveDuplicatePosts(allFeed)
 	}
 
 	return c.JSON(allFeed)
@@ -167,6 +168,23 @@ func SortPostByCreatedAt(posts []Post) {
 			}
 		}
 	}
+}
+
+func RemoveDuplicatePosts(posts []Post) []Post {
+
+	seen := make(map[uint]bool)
+
+	result := []Post{}
+
+	for _, post := range posts {
+		if !seen[post.ID] {
+			seen[post.ID] = true
+			result = append(result, post)
+		}
+	}
+
+	return result
+
 }
 
 func DeletePosts(db *gorm.DB, c *fiber.Ctx) error {

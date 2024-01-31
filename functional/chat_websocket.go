@@ -46,10 +46,17 @@ func (cs *ChatServer) Broadcast(conversationID string, mt int, msg []byte, uid u
 	defer cs.mu.Unlock()
 
 	for conn := range cs.Conversations[conversationID] {
+		rid, err := strconv.Atoi(conversationID)
+
+		if err != nil {
+			log.Println(err)
+			return
+		}
+
 		showMessage := map[string]interface{}{
 			"message": string(msg),
 			"sender":  uid,
-			"rid":     conversationID,
+			"rid":     rid,
 		}
 
 		smj, err := json.Marshal(showMessage)
