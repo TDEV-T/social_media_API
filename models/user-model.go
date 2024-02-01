@@ -396,3 +396,25 @@ func CheckCurUser(db *gorm.DB, c *fiber.Ctx) error {
 		"userrole":  userFound.Role,
 	})
 }
+
+// func updateInformation(db *gorm.DB, c *fiber.Ctx) error {
+// 	userLocal := c.Locals("user").(*User)
+
+// 	if userLocal == nil {
+// 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Can't Get User Data"})
+// 	}
+
+// 	InputProfileUpdate := new(InputProfileUpdate)
+
+// 	if err := c.BodyParser(InputProfileUpdate)
+
+// 	userFound := new(User)
+// 	result := db.First(userFound, userLocal.ID)
+
+// 	if result.Error != nil {
+// 		fmt.Println(result.Error.Error())
+// 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Can't Get User Data"})
+// 	}
+
+// 	return nil
+// }
