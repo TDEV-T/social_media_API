@@ -38,7 +38,7 @@ type InputProfileUpdate struct {
 	ProfilePicture   string
 	CoverfilePicture string
 	Bio              string `json:"bio"`
-	PrivateAccount   bool   `gorm:"default:false" json:"privatestatus"`
+	PrivateStatus    string `json:"privatestatus"`
 }
 
 type UserProfile struct {
@@ -188,9 +188,23 @@ func UpdateUser(db *gorm.DB, c *fiber.Ctx) error {
 		return err
 	}
 
+	boolValue, err := strconv.ParseBool(usr.PrivateStatus)
+	fmt.Println(boolValue)
+
+	if err != nil {
+		fmt.Println(err.Error())
+		return c.SendStatus(fiber.StatusBadRequest)
+	}
+
 	usr.ID = uint(id)
-	usr.ProfilePicture = profilePicture
-	usr.CoverfilePicture = cloverPicture
+
+	if profilePicture != "" {
+		usr.ProfilePicture = profilePicture
+	}
+
+	if cloverPicture != "" {
+		usr.CoverfilePicture = cloverPicture
+	}
 
 	var exisingUser User
 
@@ -200,17 +214,18 @@ func UpdateUser(db *gorm.DB, c *fiber.Ctx) error {
 		})
 	}
 
-	result := db.Model(&User{}).Where("id = ?", usr.ID).Updates(User{
+	result := db.Model(&User{}).Where("id = ?", usr.ID).UpdateColumns(User{
 		FullName:         usr.FullName,
 		Email:            usr.Email,
 		ProfilePicture:   usr.ProfilePicture,
 		CoverfilePicture: usr.CoverfilePicture,
 		Bio:              usr.Bio,
-		PrivateAccount:   usr.PrivateAccount,
+		PrivateAccount:   boolValue,
 	})
 
 	if result.Error != nil {
-		return result.Error
+		fmt.Println(result.Error)
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Error Can't Update"})
 	}
 
 	return c.JSON(fiber.Map{
@@ -383,10 +398,6 @@ func CheckCurUser(db *gorm.DB, c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Can't Get User Data"})
 	}
 
-	if userFound == nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Can't Get User Data"})
-	}
-
 	return c.JSON(fiber.Map{
 		"status":    true,
 		"useremail": userFound.Email,
@@ -396,25 +407,3 @@ func CheckCurUser(db *gorm.DB, c *fiber.Ctx) error {
 		"userrole":  userFound.Role,
 	})
 }
-
-// func updateInformation(db *gorm.DB, c *fiber.Ctx) error {
-// 	userLocal := c.Locals("user").(*User)
-
-// 	if userLocal == nil {
-// 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Can't Get User Data"})
-// 	}
-
-// 	InputProfileUpdate := new(InputProfileUpdate)
-
-// 	if err := c.BodyParser(InputProfileUpdate)
-
-// 	userFound := new(User)
-// 	result := db.First(userFound, userLocal.ID)
-
-// 	if result.Error != nil {
-// 		fmt.Println(result.Error.Error())
-// 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Can't Get User Data"})
-// 	}
-
-// 	return nil
-// }
