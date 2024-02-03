@@ -41,6 +41,11 @@ type InputProfileUpdate struct {
 	PrivateStatus    string `json:"privatestatus"`
 }
 
+type InputPasswordChangeUpdate struct {
+	PasswordCurrent string `json:"password_cur"`
+	PasswordNew     string `json:"password_new"`
+}
+
 type UserProfile struct {
 	ID               uint
 	Username         string
@@ -164,6 +169,57 @@ func GetUserById(db *gorm.DB, c *fiber.Ctx) error {
 		"following_count": followingCount,
 		"statusfollower":  statusfollow,
 	})
+}
+
+func UpdatePassword(db *gorm.DB, c *fiber.Ctx) error {
+	userLocal := c.Locals("user").(*User)
+
+	if userLocal == nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Can't Update Password !"})
+	}
+
+	passwordInput := new(InputPasswordChangeUpdate)
+
+	if err := c.BodyParser(passwordInput); err != nil {
+		fmt.Println(err.Error())
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Can't Update Password"})
+	}
+
+	var exisingUser User
+
+	if err := db.Where("id = ?", userLocal.ID).First(&exisingUser).Error; err != nil {
+		fmt.Println(err.Error())
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Can't Update Password !"})
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(exisingUser.Password), []byte(passwordInput.PasswordCurrent)); err != nil {
+		var messageError string
+
+		if err.Error() == "crypto/bcrypt: hashedPassword is not the hash of the given password" {
+			messageError = "Password Incorrect !"
+		}
+
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"message": messageError,
+		})
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(passwordInput.PasswordNew), bcrypt.DefaultCost)
+
+	if err != nil {
+		fmt.Println(err.Error())
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Can't Update Password !"})
+	}
+
+	result := db.Table("users").Where("id = ?", exisingUser.ID).UpdateColumn("password", string(hashedPassword))
+
+	if result.Error != nil {
+		fmt.Println(result.Error.Error())
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Can't Update Password !"})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Update Success !"})
+
 }
 
 func UpdateUser(db *gorm.DB, c *fiber.Ctx) error {

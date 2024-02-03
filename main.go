@@ -102,6 +102,9 @@ func setUpRoute(app *fiber.App) {
 	app.Get("/users", func(c *fiber.Ctx) error {
 		return c.JSON(models.GetUserAll(db, c))
 	})
+	app.Post("/users/changepassword", func(c *fiber.Ctx) error {
+		return models.UpdatePassword(db, c)
+	})
 
 	app.Get("/users/:id", func(c *fiber.Ctx) error {
 		return models.GetUserById(db, c)
