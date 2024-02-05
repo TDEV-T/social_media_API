@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	host     = "localhost"
+	host     = "110.78.37.68"
 	port     = 5432
 	user     = "root"
 	password = "1329Pathrapol!"
@@ -99,9 +99,6 @@ func setUpRoute(app *fiber.App) {
 
 	app.Use("/users", middleware.AuthRequiredHeader)
 
-	app.Get("/users", func(c *fiber.Ctx) error {
-		return c.JSON(models.GetUserAll(db, c))
-	})
 	app.Post("/users/changepassword", func(c *fiber.Ctx) error {
 		return models.UpdatePassword(db, c)
 	})
@@ -209,5 +206,19 @@ func setUpRoute(app *fiber.App) {
 
 	app.Use("/chat", middleware.AuthRequiredHeaderForChat)
 	app.Get("/chat", websocket.New(functional.MessageSocket(db, chatServer)))
+
+	app.Use("/admin", middleware.AuthAdminRequireWithHeader)
+
+	app.Get("/admin/users", func(c *fiber.Ctx) error {
+		return c.JSON(models.GetUserAll(db, c))
+	})
+
+	app.Get("/admin/users/:id", func(c *fiber.Ctx) error {
+		return models.GetUserById(db, c)
+	})
+
+	app.Get("/admin/posts", func(c *fiber.Ctx) error {
+		return models.GetPosts(db, c)
+	})
 
 }
