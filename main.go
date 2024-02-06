@@ -221,4 +221,8 @@ func setUpRoute(app *fiber.App) {
 		return models.GetPosts(db, c)
 	})
 
+	app.Get("admin/stats", func(c *fiber.Ctx) error {
+		return models.GetAllStats(db, c)
+	})
+
 }
