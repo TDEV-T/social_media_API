@@ -330,7 +330,7 @@ func GetUserAll(db *gorm.DB, c *fiber.Ctx) []User {
 
 	var user []User
 
-	result := db.Find(&user)
+	result := db.Select("id", "username", "full_name", "profile_picture", "email").Find(&user)
 
 	if result.Error != nil {
 		log.Fatalf("Find User failed : %v", result.Error)
@@ -462,4 +462,84 @@ func CheckCurUser(db *gorm.DB, c *fiber.Ctx) error {
 		"username":  userFound.Username,
 		"userrole":  userFound.Role,
 	})
+}
+
+func LoginAdmin(db *gorm.DB, c *fiber.Ctx) error {
+
+	user := new(User)
+
+	selectedUser := new(User)
+
+	if err := c.BodyParser(user); err != nil {
+		return err
+	}
+
+	result := db.Where("username = ? AND role ='admin'", user.Username).First(selectedUser)
+
+	if result.Error != nil {
+
+		var messageError string
+
+		if result.Error.Error() == "record not found" {
+			messageError = "Username or Password Incorrect !"
+		} else {
+			messageError = result.Error.Error()
+		}
+
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"message": messageError,
+		})
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(selectedUser.Password), []byte(user.Password)); err != nil {
+		var messageError string
+
+		if err.Error() == "crypto/bcrypt: hashedPassword is not the hash of the given password" {
+			messageError = "Username or Password Incorrect !"
+		}
+
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"message": messageError,
+		})
+	}
+
+	jwtSecretKey := os.Getenv("SECRET_KEY")
+
+	if jwtSecretKey == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": "Can't get secret_key",
+		})
+	}
+
+	token := jwt.New(jwt.SigningMethodHS256)
+
+	claims := token.Claims.(jwt.MapClaims)
+	claims["user_id"] = selectedUser.ID
+	claims["user_name"] = selectedUser.Username
+	claims["user_role"] = selectedUser.Role
+	claims["exp"] = time.Now().Add(time.Hour * 72).Unix()
+
+	t, err := token.SignedString([]byte(jwtSecretKey))
+
+	if err != nil {
+		return err
+	}
+	c.Cookie(&fiber.Cookie{
+		Name:     "jwt",
+		Value:    t,
+		Expires:  time.Now().Add(time.Hour * 72),
+		HTTPOnly: true,
+	})
+
+	return c.JSON(fiber.Map{
+		"token":     t,
+		"userid":    selectedUser.ID,
+		"username":  selectedUser.Username,
+		"userrole":  selectedUser.Role,
+		"userimg":   selectedUser.ProfilePicture,
+		"message":   "Login Successfully",
+		"status":    true,
+		"useremail": selectedUser.Email,
+	})
+
 }

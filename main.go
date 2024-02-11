@@ -12,6 +12,7 @@ import (
 
 	"github.com/gofiber/contrib/websocket"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/joho/godotenv"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -19,7 +20,7 @@ import (
 )
 
 const (
-	host     = "110.78.37.68"
+	host     = "localhost"
 	port     = 5432
 	user     = "root"
 	password = "1329Pathrapol!"
@@ -53,6 +54,11 @@ func main() {
 		BodyLimit:         20 * 1024 * 1024,
 		StreamRequestBody: true,
 	})
+
+	app.Use(cors.New(cors.Config{
+		AllowOrigins: "http://localhost:3000",
+		AllowHeaders: "Origin,Content-Type,Accept,authtoken",
+	}))
 
 	setUpRoute(app)
 
@@ -223,6 +229,10 @@ func setUpRoute(app *fiber.App) {
 
 	app.Get("admin/stats", func(c *fiber.Ctx) error {
 		return models.GetAllStats(db, c)
+	})
+
+	app.Post("/loginAdmin", func(c *fiber.Ctx) error {
+		return models.LoginAdmin(db, c)
 	})
 
 }
