@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	host     = "localhost"
+	host     = "postgres"
 	port     = 5432
 	user     = "root"
 	password = "1329Pathrapol!"
@@ -85,6 +85,11 @@ var chatServer = &functional.ChatServer{
 }
 
 func setUpRoute(app *fiber.App) {
+
+	app.Get("/login", func(c *fiber.Ctx) error {
+		return c.SendString("Test")
+	})
+
 	app.Post("/login", func(c *fiber.Ctx) error {
 		return models.LoginUser(db, c)
 	})
