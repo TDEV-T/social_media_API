@@ -330,7 +330,7 @@ func GetUserAll(db *gorm.DB, c *fiber.Ctx) []User {
 
 	var user []User
 
-	result := db.Select("id", "username", "full_name", "profile_picture", "email").Find(&user)
+	result := db.Select("id", "username", "full_name", "profile_picture", "email").Where("role != 'admin' ").Find(&user)
 
 	if result.Error != nil {
 		log.Fatalf("Find User failed : %v", result.Error)
