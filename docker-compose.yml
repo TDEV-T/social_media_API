@@ -29,6 +29,17 @@ services:
     restart: unless-stopped
     networks:
       - web_network
+  
+  apiGolang: 
+    depends_on:
+      - postgres
+    image: chitter_api:1.0
+    build: social_media_API/
+    restart: always 
+    networks:
+      - web_network
+    ports:
+      - "7890:8080"
 
 volumes:
   postgres_data:

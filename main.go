@@ -12,6 +12,7 @@ import (
 
 	"github.com/gofiber/contrib/websocket"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/joho/godotenv"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -19,7 +20,7 @@ import (
 )
 
 const (
-	host     = "localhost"
+	host     = "postgres"
 	port     = 5432
 	user     = "root"
 	password = "1329Pathrapol!"
@@ -53,6 +54,11 @@ func main() {
 		BodyLimit:         20 * 1024 * 1024,
 		StreamRequestBody: true,
 	})
+
+	app.Use(cors.New(cors.Config{
+		AllowOrigins: "http://localhost:3000",
+		AllowHeaders: "Origin,Content-Type,Accept,authtoken,file",
+	}))
 
 	setUpRoute(app)
 
@@ -104,8 +110,8 @@ func setUpRoute(app *fiber.App) {
 
 	app.Use("/users", middleware.AuthRequiredHeader)
 
-	app.Get("/users", func(c *fiber.Ctx) error {
-		return c.JSON(models.GetUserAll(db, c))
+	app.Post("/users/changepassword", func(c *fiber.Ctx) error {
+		return models.UpdatePassword(db, c)
 	})
 
 	app.Get("/users/:id", func(c *fiber.Ctx) error {
@@ -211,5 +217,27 @@ func setUpRoute(app *fiber.App) {
 
 	app.Use("/chat", middleware.AuthRequiredHeaderForChat)
 	app.Get("/chat", websocket.New(functional.MessageSocket(db, chatServer)))
+
+	app.Use("/admin", middleware.AuthAdminRequireWithHeader)
+
+	app.Get("/admin/users", func(c *fiber.Ctx) error {
+		return c.JSON(models.GetUserAll(db, c))
+	})
+
+	app.Get("/admin/users/:id", func(c *fiber.Ctx) error {
+		return models.GetUserById(db, c)
+	})
+
+	app.Get("/admin/posts", func(c *fiber.Ctx) error {
+		return models.GetPosts(db, c)
+	})
+
+	app.Get("admin/stats", func(c *fiber.Ctx) error {
+		return models.GetAllStats(db, c)
+	})
+
+	app.Post("/loginAdmin", func(c *fiber.Ctx) error {
+		return models.LoginAdmin(db, c)
+	})
 
 }

@@ -38,7 +38,12 @@ type InputProfileUpdate struct {
 	ProfilePicture   string
 	CoverfilePicture string
 	Bio              string `json:"bio"`
-	PrivateAccount   bool   `gorm:"default:false" json:"privatestatus"`
+	PrivateStatus    string `json:"privatestatus"`
+}
+
+type InputPasswordChangeUpdate struct {
+	PasswordCurrent string `json:"password_cur"`
+	PasswordNew     string `json:"password_new"`
 }
 
 type UserProfile struct {
@@ -166,6 +171,57 @@ func GetUserById(db *gorm.DB, c *fiber.Ctx) error {
 	})
 }
 
+func UpdatePassword(db *gorm.DB, c *fiber.Ctx) error {
+	userLocal := c.Locals("user").(*User)
+
+	if userLocal == nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Can't Update Password !"})
+	}
+
+	passwordInput := new(InputPasswordChangeUpdate)
+
+	if err := c.BodyParser(passwordInput); err != nil {
+		fmt.Println(err.Error())
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Can't Update Password"})
+	}
+
+	var exisingUser User
+
+	if err := db.Where("id = ?", userLocal.ID).First(&exisingUser).Error; err != nil {
+		fmt.Println(err.Error())
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Can't Update Password !"})
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(exisingUser.Password), []byte(passwordInput.PasswordCurrent)); err != nil {
+		var messageError string
+
+		if err.Error() == "crypto/bcrypt: hashedPassword is not the hash of the given password" {
+			messageError = "Password Incorrect !"
+		}
+
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"message": messageError,
+		})
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(passwordInput.PasswordNew), bcrypt.DefaultCost)
+
+	if err != nil {
+		fmt.Println(err.Error())
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Can't Update Password !"})
+	}
+
+	result := db.Table("users").Where("id = ?", exisingUser.ID).UpdateColumn("password", string(hashedPassword))
+
+	if result.Error != nil {
+		fmt.Println(result.Error.Error())
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Can't Update Password !"})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Update Success !"})
+
+}
+
 func UpdateUser(db *gorm.DB, c *fiber.Ctx) error {
 
 	userLocal := c.Locals("user").(*User)
@@ -188,9 +244,23 @@ func UpdateUser(db *gorm.DB, c *fiber.Ctx) error {
 		return err
 	}
 
+	boolValue, err := strconv.ParseBool(usr.PrivateStatus)
+	fmt.Println(boolValue)
+
+	if err != nil {
+		fmt.Println(err.Error())
+		return c.SendStatus(fiber.StatusBadRequest)
+	}
+
 	usr.ID = uint(id)
-	usr.ProfilePicture = profilePicture
-	usr.CoverfilePicture = cloverPicture
+
+	if profilePicture != "" {
+		usr.ProfilePicture = profilePicture
+	}
+
+	if cloverPicture != "" {
+		usr.CoverfilePicture = cloverPicture
+	}
 
 	var exisingUser User
 
@@ -200,17 +270,18 @@ func UpdateUser(db *gorm.DB, c *fiber.Ctx) error {
 		})
 	}
 
-	result := db.Model(&User{}).Where("id = ?", usr.ID).Updates(User{
+	result := db.Model(&User{}).Where("id = ?", usr.ID).UpdateColumns(User{
 		FullName:         usr.FullName,
 		Email:            usr.Email,
 		ProfilePicture:   usr.ProfilePicture,
 		CoverfilePicture: usr.CoverfilePicture,
 		Bio:              usr.Bio,
-		PrivateAccount:   usr.PrivateAccount,
+		PrivateAccount:   boolValue,
 	})
 
 	if result.Error != nil {
-		return result.Error
+		fmt.Println(result.Error)
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Error Can't Update"})
 	}
 
 	return c.JSON(fiber.Map{
@@ -259,7 +330,7 @@ func GetUserAll(db *gorm.DB, c *fiber.Ctx) []User {
 
 	var user []User
 
-	result := db.Find(&user)
+	result := db.Select("id", "username", "full_name", "profile_picture", "email").Find(&user)
 
 	if result.Error != nil {
 		log.Fatalf("Find User failed : %v", result.Error)
@@ -383,10 +454,6 @@ func CheckCurUser(db *gorm.DB, c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Can't Get User Data"})
 	}
 
-	if userFound == nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Can't Get User Data"})
-	}
-
 	return c.JSON(fiber.Map{
 		"status":    true,
 		"useremail": userFound.Email,
@@ -397,24 +464,82 @@ func CheckCurUser(db *gorm.DB, c *fiber.Ctx) error {
 	})
 }
 
-// func updateInformation(db *gorm.DB, c *fiber.Ctx) error {
-// 	userLocal := c.Locals("user").(*User)
+func LoginAdmin(db *gorm.DB, c *fiber.Ctx) error {
 
-// 	if userLocal == nil {
-// 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Can't Get User Data"})
-// 	}
+	user := new(User)
 
-// 	InputProfileUpdate := new(InputProfileUpdate)
+	selectedUser := new(User)
 
-// 	if err := c.BodyParser(InputProfileUpdate)
+	if err := c.BodyParser(user); err != nil {
+		return err
+	}
 
-// 	userFound := new(User)
-// 	result := db.First(userFound, userLocal.ID)
+	result := db.Where("username = ? AND role ='admin'", user.Username).First(selectedUser)
 
-// 	if result.Error != nil {
-// 		fmt.Println(result.Error.Error())
-// 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Can't Get User Data"})
-// 	}
+	if result.Error != nil {
 
-// 	return nil
-// }
+		var messageError string
+
+		if result.Error.Error() == "record not found" {
+			messageError = "Username or Password Incorrect !"
+		} else {
+			messageError = result.Error.Error()
+		}
+
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"message": messageError,
+		})
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(selectedUser.Password), []byte(user.Password)); err != nil {
+		var messageError string
+
+		if err.Error() == "crypto/bcrypt: hashedPassword is not the hash of the given password" {
+			messageError = "Username or Password Incorrect !"
+		}
+
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"message": messageError,
+		})
+	}
+
+	jwtSecretKey := os.Getenv("SECRET_KEY")
+
+	if jwtSecretKey == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": "Can't get secret_key",
+		})
+	}
+
+	token := jwt.New(jwt.SigningMethodHS256)
+
+	claims := token.Claims.(jwt.MapClaims)
+	claims["user_id"] = selectedUser.ID
+	claims["user_name"] = selectedUser.Username
+	claims["user_role"] = selectedUser.Role
+	claims["exp"] = time.Now().Add(time.Hour * 72).Unix()
+
+	t, err := token.SignedString([]byte(jwtSecretKey))
+
+	if err != nil {
+		return err
+	}
+	c.Cookie(&fiber.Cookie{
+		Name:     "jwt",
+		Value:    t,
+		Expires:  time.Now().Add(time.Hour * 72),
+		HTTPOnly: true,
+	})
+
+	return c.JSON(fiber.Map{
+		"token":     t,
+		"userid":    selectedUser.ID,
+		"username":  selectedUser.Username,
+		"userrole":  selectedUser.Role,
+		"userimg":   selectedUser.ProfilePicture,
+		"message":   "Login Successfully",
+		"status":    true,
+		"useremail": selectedUser.Email,
+	})
+
+}
