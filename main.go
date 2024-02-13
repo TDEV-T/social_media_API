@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	host     = "postgres"
+	host     = "postgresChitter"
 	port     = 5432
 	user     = "root"
 	password = "1329Pathrapol!"
@@ -56,7 +56,7 @@ func main() {
 	})
 
 	app.Use(cors.New(cors.Config{
-		AllowOrigins: "http://localhost:3000",
+		AllowOrigins: "http://localhost:3000,http://localhost:5890",
 		AllowHeaders: "Origin,Content-Type,Accept,authtoken,file",
 	}))
 

@@ -1,45 +1,57 @@
 version: "3.9"
 
 services:
-  postgres:
+  postgreschitter:
     image: postgres:latest
-    container_name: postgresGo
+    container_name: postgresChitter
     environment:
       POSTGRES_DB: social_media
       POSTGRES_USER: root
       POSTGRES_PASSWORD: 1329Pathrapol!
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - ./postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     restart: unless-stopped
     networks:
       - web_network
 
-  pgadmin:
+  pgadminchitter:
     image: dpage/pgadmin4:latest
-    container_name: pgadminGo
+    container_name: pgadminChitter
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@admin.com
       PGADMIN_DEFAULT_PASSWORD: admin
     ports:
       - "5050:80"
     depends_on:
-      - postgres
+      - postgreschitter
     restart: unless-stopped
     networks:
       - web_network
-  
-  apiGolang: 
+
+  apiGolang:
     depends_on:
-      - postgres
+      - postgreschitter
     image: chitter_api:1.0
     build: social_media_API/
-    restart: always 
+    volumes:
+      - ./social_media_API:/usr/src/app
+    restart: always
     networks:
       - web_network
     ports:
       - "7890:8080"
+  dashboardChitter:
+    depends_on:
+      - apiGolang
+    image: chitter_dashboard:1.0
+    build: Chitter_Dashboard_Nextjs/
+    restart: always
+    networks:
+      - web_network
+    ports:
+      - "5890:3000"
 
 volumes:
   postgres_data:
